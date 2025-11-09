@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "688019680147",
+    "project_id": "pet-mates-360db",
+    "storage_bucket": "pet-mates-360db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688019680147:android:07afc9b7686e836d71d666",
+        "android_client_info": {
+          "package_name": "com.softwaredads.petmates"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvxaQDUTUskYlH1QNi2HE1S7OQWJxPlH8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
