@@ -47,20 +47,20 @@ const GoogleLogin: React.FC = () => {
   };
 
   
-  const signOutFromGoogle = async () => {
-    try {
-      await GoogleSignin.signOut();
-      await auth().signOut();
-      console.log('Signed out successfully');
-    } catch (error) {
-      console.log('Signout Error:', error);
-    }
-  };
+  // const signOutFromGoogle = async () => {
+  //   try {
+  //     await GoogleSignin.signOut();
+  //     await auth().signOut();
+  //     console.log('Signed out successfully');
+  //   } catch (error) {
+  //     console.log('Signout Error:', error);
+  //   }
+  // };
 
   return (
     <View>
       <Button title="Login with Google" onPress={signInWithGoogle} />
-      <Button title="Sign Out" onPress={signOutFromGoogle} />
+      {/* <Button title="Sign Out" onPress={signOutFromGoogle} /> */}
     </View>
   );
 };

@@ -1,5 +1,6 @@
-import React, {createContext, useState, useContext, ReactNode} from 'react';
+import React, {createContext, useState, useContext, ReactNode, useEffect} from 'react';
 import {Animal, User, Match} from '../types';
+import auth from '@react-native-firebase/auth';
 
 // Dummy data for MVP
 const dummyAnimals: Animal[] = [
@@ -66,6 +67,32 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     email: 'john@example.com',
     animals: [],
   });
+
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged(firebaseUser => {
+      if (firebaseUser) {
+        // User is logged in, update currentUser with Firebase data
+        setCurrentUser(prev => ({
+          ...prev,
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || prev.name,
+          email: firebaseUser.email || prev.email,
+          photoURL: firebaseUser.photoURL || undefined,
+        }));
+      } else {
+        // User is logged out, reset to dummy data but keep existing animals
+        setCurrentUser(prev => ({
+          id: 'user1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          animals: prev.animals, // Keep existing animals
+        }));
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // All animals available for swiping
   const [animals, setAnimals] = useState<Animal[]>(dummyAnimals);

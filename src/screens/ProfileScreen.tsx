@@ -7,19 +7,64 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {useApp} from '../context/AppContext';
 import Button from '../components/Button';
 import AddAnimalModal from '../components/AddAnimalModal';
+import auth from '@react-native-firebase/auth';
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
 
 const ProfileScreen = () => {
   const {currentUser, addAnimal, removeAnimal} = useApp();
   const [modalVisible, setModalVisible] = useState(false);
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            try {
+              await GoogleSignin.signOut();
+              await auth().signOut();
+            } catch (error) {
+              console.log('Logout Error:', error);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+          
+          {currentUser.photoURL ? (
+            <Image
+              source={{uri: currentUser.photoURL}}
+              style={styles.profileImage}
+            />
+          ) : (
+            <View style={styles.profileImagePlaceholder}>
+              <Text style={styles.profileImageText}>
+                {currentUser.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <Text style={styles.name}>{currentUser.name}</Text>
           <Text style={styles.email}>{currentUser.email}</Text>
         </View>
@@ -85,10 +130,32 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    paddingTop: 10,
     backgroundColor: '#fff',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    position: 'relative',
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 15,
+  },
+  profileImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  profileImageText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   name: {
     fontSize: 28,
@@ -99,6 +166,21 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 20,
+  },
+  logoutButton: {
+    position: 'absolute',
+    top: 10,
+    right: 20,
+    backgroundColor: '#E74C3C',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   section: {
     padding: 20,
