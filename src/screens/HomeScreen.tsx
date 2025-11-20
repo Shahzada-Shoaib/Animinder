@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, SafeAreaView, Alert, StatusBar} from 'react-nati
 import {useApp} from '../context/AppContext';
 import SwipeCard from '../components/SwipeCard';
 import {Colors} from '../utils/colors';
+import GoogleLogin from '../components/GoogleLogin';
 
 const HomeScreen = () => {
   const {animals, likeAnimal, passAnimal} = useApp();
@@ -49,7 +50,8 @@ const HomeScreen = () => {
           </Text>
         </View>
       </View>
-      
+
+      <GoogleLogin />
       {/* Cards Container */}
       <View style={styles.cardContainer}>
         {currentIndex >= animals.length ? (
