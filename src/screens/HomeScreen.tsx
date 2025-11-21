@@ -1,13 +1,21 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, SafeAreaView, Alert, StatusBar} from 'react-native';
 import {useApp} from '../context/AppContext';
 import SwipeCard from '../components/SwipeCard';
+import MatchModal from '../components/MatchModal';
 import {Colors} from '../utils/colors';
 import GoogleLogin from '../components/GoogleLogin';
 
 const HomeScreen = () => {
-  const {animals, likeAnimal, passAnimal} = useApp();
+  const {animals, likeAnimal, passAnimal, newMatch, clearNewMatch} = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (newMatch) {
+      setMatchModalVisible(true);
+    }
+  }, [newMatch]);
 
   const handleSwipeLeft = () => {
     if (currentIndex < animals.length) {
@@ -32,6 +40,11 @@ const HomeScreen = () => {
         [{text: 'OK'}],
       );
     }
+  };
+
+  const handleCloseMatchModal = () => {
+    setMatchModalVisible(false);
+    clearNewMatch();
   };
 
   return (
@@ -83,6 +96,13 @@ const HomeScreen = () => {
       <View style={styles.instructions}>
         <Text style={styles.swipeHint}>Swipe cards or use buttons on card</Text>
       </View>
+
+      {/* Match Modal */}
+      <MatchModal
+        visible={matchModalVisible}
+        match={newMatch}
+        onClose={handleCloseMatchModal}
+      />
     </SafeAreaView>
   );
 };

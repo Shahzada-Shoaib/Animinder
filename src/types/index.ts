@@ -16,12 +16,25 @@ export interface User {
   name: string;
   email: string;
   photoURL?: string;
-  animals: Animal[];
+  phone?: string;
+  createdAt?: Date;
+}
+
+export interface Like {
+  id: string;
+  likerUserId: string;
+  likedAnimalId: string;
+  ownerId: string;
+  createdAt: Date;
 }
 
 export interface Match {
   id: string;
+  userId1: string;
+  userId2: string;
+  animal1Id: string;
   animal1: Animal;
+  animal2Id: string;
   animal2: Animal;
   timestamp: Date;
 }

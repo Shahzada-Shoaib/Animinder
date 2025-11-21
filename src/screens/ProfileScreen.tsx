@@ -16,7 +16,7 @@ import auth from '@react-native-firebase/auth';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 
 const ProfileScreen = () => {
-  const {currentUser, addAnimal, removeAnimal} = useApp();
+  const {currentUser, userAnimals, addAnimal, removeAnimal} = useApp();
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleLogout = async () => {
@@ -79,7 +79,7 @@ const ProfileScreen = () => {
             />
           </View>
 
-          {currentUser.animals.length === 0 ? (
+          {userAnimals.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No pets added yet</Text>
               <Text style={styles.emptySubtext}>
@@ -88,7 +88,7 @@ const ProfileScreen = () => {
             </View>
           ) : (
             <View style={styles.animalsGrid}>
-              {currentUser.animals.map(animal => (
+              {userAnimals.map(animal => (
                 <View key={animal.id} style={styles.animalCard}>
                   <Image
                     source={{uri: animal.image}}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,27 @@ import {
   Image,
 } from 'react-native';
 import {useApp} from '../context/AppContext';
+import {getUserMatches} from '../services/matchService';
+import auth from '@react-native-firebase/auth';
 
 const MatchesScreen = () => {
-  const {matches} = useApp();
+  const {matches, currentUser} = useApp();
+
+  useEffect(() => {
+    const loadMatches = async () => {
+      const firebaseUser = auth().currentUser;
+      if (firebaseUser && currentUser.id !== 'user1') {
+        try {
+          const userMatches = await getUserMatches(currentUser.id);
+          // Matches are already loaded in AppContext, this is just for refresh
+        } catch (error) {
+          console.error('Error loading matches:', error);
+        }
+      }
+    };
+
+    loadMatches();
+  }, [currentUser.id]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,27 +49,33 @@ const MatchesScreen = () => {
                 <View style={styles.matchHeader}>
                   <Text style={styles.matchTitle}>It's a Match!</Text>
                   <Text style={styles.matchDate}>
-                    {new Date(match.timestamp).toLocaleDateString()}
+                    {match.timestamp
+                      ? new Date(match.timestamp).toLocaleDateString()
+                      : 'Today'}
                   </Text>
                 </View>
 
                 <View style={styles.animalsContainer}>
                   <View style={styles.animalContainer}>
                     <Image
-                      source={{uri: match.animal1.image}}
+                      source={{uri: match.animal1?.image || ''}}
                       style={styles.animalImage}
                     />
-                    <Text style={styles.animalName}>{match.animal1.name}</Text>
+                    <Text style={styles.animalName}>
+                      {match.animal1?.name || 'Unknown'}
+                    </Text>
                   </View>
 
                   <Text style={styles.heart}>❤️</Text>
 
                   <View style={styles.animalContainer}>
                     <Image
-                      source={{uri: match.animal2.image}}
+                      source={{uri: match.animal2?.image || ''}}
                       style={styles.animalImage}
                     />
-                    <Text style={styles.animalName}>{match.animal2.name}</Text>
+                    <Text style={styles.animalName}>
+                      {match.animal2?.name || 'Unknown'}
+                    </Text>
                   </View>
                 </View>
               </View>
