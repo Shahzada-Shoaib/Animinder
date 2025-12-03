@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "688019680147",
+    "project_id": "pet-mates-360db",
+    "storage_bucket": "pet-mates-360db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688019680147:android:07afc9b7686e836d71d666",
+        "android_client_info": {
+          "package_name": "com.softwaredads.petmates"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "688019680147-3ap7smbedlu0cc3lvidcriuj80usorep.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.softwaredads.petmates",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "688019680147-lgbsnc69jch90e2ee8dopa9fhp7b810g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvxaQDUTUskYlH1QNi2HE1S7OQWJxPlH8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "688019680147-4t7r73eovn6qidfqvh98i8t04fqcg66v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
