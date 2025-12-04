@@ -2,8 +2,12 @@ import firestore from '@react-native-firebase/firestore';
 import {Message, Chat, User} from '../types';
 
 const chatsCollection = firestore().collection('chats');
-const messagesCollection = firestore().collection('messages');
 const usersCollection = firestore().collection('users');
+
+// Helper to get messages subcollection for a chat
+const getMessagesCollection = (chatId: string) => {
+  return chatsCollection.doc(chatId).collection('messages');
+};
 
 /**
  * Generate consistent chat ID from two user IDs
@@ -63,7 +67,7 @@ export const createOrGetChat = async (
 };
 
 /**
- * Send a message
+ * Send a message (using subcollections and transactions for reliability)
  */
 export const sendMessage = async (
   chatId: string,
@@ -72,41 +76,51 @@ export const sendMessage = async (
   text: string,
 ): Promise<void> => {
   try {
-    const messageData = {
-      chatId,
-      senderId,
-      receiverId,
-      text,
-      timestamp: firestore.FieldValue.serverTimestamp(),
-      read: false,
-    };
-
-    // Add message to messages collection
-    await messagesCollection.add(messageData);
-
-    // Update chat document with last message
     const chatRef = chatsCollection.doc(chatId);
-    const chatDoc = await chatRef.get();
-    const chatData = chatDoc.data();
+    const messagesRef = getMessagesCollection(chatId);
 
-    if (chatData) {
+    // Use transaction to ensure atomic updates
+    await firestore().runTransaction(async (transaction) => {
+      const chatDoc = await transaction.get(chatRef);
+      
+      if (!chatDoc.exists()) {
+        throw new Error('Chat does not exist');
+      }
+
+      const chatData = chatDoc.data();
+      if (!chatData) {
+        throw new Error('Chat data is null');
+      }
+
+      // Add message to subcollection
+      const messageRef = messagesRef.doc();
+      transaction.set(messageRef, {
+        chatId,
+        senderId,
+        receiverId,
+        text,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+        read: false,
+      });
+
+      // Update chat document with last message and unread count
       const isUser1 = chatData.userId1 === senderId;
       const updateData: any = {
         lastMessage: text,
         lastMessageTime: firestore.FieldValue.serverTimestamp(),
       };
 
-      // Increment unread count for receiver
+      // Atomically increment unread count for receiver
       if (isUser1) {
-        updateData.unreadCount2 =
-          firestore.FieldValue.increment(1);
+        const currentCount = chatData.unreadCount2 || 0;
+        updateData.unreadCount2 = currentCount + 1;
       } else {
-        updateData.unreadCount1 =
-          firestore.FieldValue.increment(1);
+        const currentCount = chatData.unreadCount1 || 0;
+        updateData.unreadCount1 = currentCount + 1;
       }
 
-      await chatRef.update(updateData);
-    }
+      transaction.update(chatRef, updateData);
+    });
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;
@@ -114,15 +128,23 @@ export const sendMessage = async (
 };
 
 /**
- * Get real-time messages for a chat
+ * Get real-time messages for a chat with pagination support
+ * @param chatId - The chat ID
+ * @param callback - Callback function to receive messages
+ * @param limit - Maximum number of messages to fetch (default: 50)
  */
 export const getChatMessages = (
   chatId: string,
   callback: (messages: Message[]) => void,
+  limit: number = 50,
 ): () => void => {
-  const unsubscribe = messagesCollection
-    .where('chatId', '==', chatId)
-    .orderBy('timestamp', 'asc')
+  const messagesRef = getMessagesCollection(chatId);
+  
+  // Query last N messages, ordered by timestamp descending
+  // We'll reverse them in the callback to show oldest first
+  const unsubscribe = messagesRef
+    .orderBy('timestamp', 'desc')
+    .limit(limit)
     .onSnapshot(
       snapshot => {
         const messages: Message[] = [];
@@ -140,7 +162,8 @@ export const getChatMessages = (
             read: data.read || false,
           });
         });
-        callback(messages);
+        // Reverse to show oldest messages first (ascending order)
+        callback(messages.reverse());
       },
       error => {
         console.error('Error listening to messages:', error);
@@ -148,6 +171,51 @@ export const getChatMessages = (
     );
 
   return unsubscribe;
+};
+
+/**
+ * Load more messages (for pagination)
+ * @param chatId - The chat ID
+ * @param lastMessageTimestamp - Timestamp of the last loaded message
+ * @param limit - Number of messages to load (default: 50)
+ */
+export const loadMoreMessages = async (
+  chatId: string,
+  lastMessageTimestamp: Date,
+  limit: number = 50,
+): Promise<Message[]> => {
+  try {
+    const messagesRef = getMessagesCollection(chatId);
+    const lastTimestamp = firestore.Timestamp.fromDate(lastMessageTimestamp);
+
+    const snapshot = await messagesRef
+      .orderBy('timestamp', 'desc')
+      .startAfter(lastTimestamp)
+      .limit(limit)
+      .get();
+
+    const messages: Message[] = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      messages.push({
+        id: doc.id,
+        chatId: data.chatId || chatId,
+        senderId: data.senderId || '',
+        receiverId: data.receiverId || '',
+        text: data.text || '',
+        timestamp: data.timestamp
+          ? data.timestamp.toDate()
+          : new Date(),
+        read: data.read || false,
+      });
+    });
+
+    // Reverse to show oldest first
+    return messages.reverse();
+  } catch (error) {
+    console.error('Error loading more messages:', error);
+    throw error;
+  }
 };
 
 /**
@@ -273,44 +341,46 @@ export const getUserChats = (
 };
 
 /**
- * Mark messages as read
+ * Mark messages as read (using subcollections and transactions)
  */
 export const markMessagesAsRead = async (
   chatId: string,
   userId: string,
 ): Promise<void> => {
   try {
-    // Mark all unread messages as read
-    const unreadMessages = await messagesCollection
-      .where('chatId', '==', chatId)
-      .where('receiverId', '==', userId)
-      .where('read', '==', false)
-      .get();
-
-    const batch = firestore().batch();
-    unreadMessages.forEach(doc => {
-      batch.update(doc.ref, {read: true});
-    });
-
-    await batch.commit();
-
-    // Reset unread count in chat document
+    const messagesRef = getMessagesCollection(chatId);
     const chatRef = chatsCollection.doc(chatId);
-    const chatDoc = await chatRef.get();
-    const chatData = chatDoc.data();
 
-    if (chatData) {
-      const isUser1 = chatData.userId1 === userId;
-      const updateData: any = {};
+    // Use transaction for atomic updates
+    await firestore().runTransaction(async (transaction) => {
+      // Get unread messages
+      const unreadSnapshot = await messagesRef
+        .where('receiverId', '==', userId)
+        .where('read', '==', false)
+        .get();
 
-      if (isUser1) {
-        updateData.unreadCount1 = 0;
-      } else {
-        updateData.unreadCount2 = 0;
+      // Mark all unread messages as read
+      unreadSnapshot.forEach(doc => {
+        transaction.update(doc.ref, {read: true});
+      });
+
+      // Reset unread count in chat document
+      const chatDoc = await transaction.get(chatRef);
+      const chatData = chatDoc.data();
+
+      if (chatData) {
+        const isUser1 = chatData.userId1 === userId;
+        const updateData: any = {};
+
+        if (isUser1) {
+          updateData.unreadCount1 = 0;
+        } else {
+          updateData.unreadCount2 = 0;
+        }
+
+        transaction.update(chatRef, updateData);
       }
-
-      await chatRef.update(updateData);
-    }
+    });
   } catch (error) {
     console.error('Error marking messages as read:', error);
     throw error;
