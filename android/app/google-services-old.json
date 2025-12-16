@@ -22,14 +22,6 @@
           }
         },
         {
-          "client_id": "688019680147-pg61ka4la31g1dtt28o3qdvbl7rhtfa2.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.softwaredads.petmates",
-            "certificate_hash": "0665d968a4e43f9f9abedf99aa7900b7c296a359"
-          }
-        },
-        {
           "client_id": "688019680147-lgbsnc69jch90e2ee8dopa9fhp7b810g.apps.googleusercontent.com",
           "client_type": 3
         }
