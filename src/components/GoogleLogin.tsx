@@ -5,6 +5,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Button from './Button';
 
 const GoogleLogin: React.FC = () => {
+  
   const signInWithGoogle = async (): Promise<void> => {
     try {
       // 1. Check Google Play Services
