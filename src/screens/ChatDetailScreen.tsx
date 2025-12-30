@@ -49,6 +49,20 @@ const ChatDetailScreen = () => {
       headerBackTitle: 'Back',
     });
 
+    // Set current viewing chat ID (to avoid showing notifications for this chat)
+    setCurrentViewingChatId(chatId);
+
+    // Cleanup: clear viewing chat ID when leaving
+    return () => {
+      setCurrentViewingChatId(undefined);
+    };
+  }, [chatId, otherUserName, navigation, setCurrentViewingChatId]);
+
+  useEffect(() => {
+    if (!chatId) {
+      return;
+    }
+
     // Subscribe to messages
     const unsubscribe = getChatMessages(chatId, (newMessages) => {
       // Merge real messages from Firestore with any pending optimistic messages

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {Text, Platform} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
+import {NavigationContainer, NavigationContainerRef} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import auth from '@react-native-firebase/auth';
 import HomeScreen from '../screens/HomeScreen';
@@ -11,6 +12,7 @@ import ChatsScreen from '../screens/ChatsScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import LoginScreen from '../screens/LoginScreen';
 import {Colors} from '../utils/colors';
+import {useApp} from '../context/AppContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();

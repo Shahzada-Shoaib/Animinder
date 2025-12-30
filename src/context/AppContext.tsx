@@ -4,8 +4,9 @@ import auth from '@react-native-firebase/auth';
 import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals} from '../services/firestoreService';
 import {saveLike, getUserLikes, checkMutualLike} from '../services/likeService';
 import {saveMatch, getUserMatches, getUserMatchesRealtime} from '../services/matchService';
-import {getUserChats, createOrGetChat} from '../services/chatService';
+import {getUserChats, createOrGetChat, setupMessageNotifications} from '../services/chatService';
 import {initializeNotifications, setupNotificationHandlers, deleteFCMToken} from '../services/notificationService';
+import {NavigationContainerRef} from '@react-navigation/native';
 
 // Dummy data for MVP
 const dummyAnimals: Animal[] = [
@@ -172,9 +173,16 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             }
             notificationUnsubscribeRef.current = setupNotificationHandlers((chatId) => {
               // Navigate to chat when notification is pressed
-              // This will be handled by navigation listener
-              console.log('Navigate to chat:', chatId);
+              handleNotificationPress(chatId);
             });
+            // Setup message notifications listener
+            if (messageNotificationUnsubscribeRef.current) {
+              messageNotificationUnsubscribeRef.current();
+            }
+            messageNotificationUnsubscribeRef.current = setupMessageNotifications(
+              firebaseUser.uid,
+              currentViewingChatIdRef.current,
+            );
             // Load all animals for swiping (excluding current user's and already liked)
             await loadAllAnimals(firebaseUser.uid, likedIds);
           } else {
@@ -206,8 +214,16 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             }
             notificationUnsubscribeRef.current = setupNotificationHandlers((chatId) => {
               // Navigate to chat when notification is pressed
-              console.log('Navigate to chat:', chatId);
+              handleNotificationPress(chatId);
             });
+            // Setup message notifications listener
+            if (messageNotificationUnsubscribeRef.current) {
+              messageNotificationUnsubscribeRef.current();
+            }
+            messageNotificationUnsubscribeRef.current = setupMessageNotifications(
+              firebaseUser.uid,
+              currentViewingChatIdRef.current,
+            );
             // Load all animals for swiping (excluding current user's and already liked)
             await loadAllAnimals(firebaseUser.uid, likedIds);
           }
@@ -255,6 +271,11 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
           notificationUnsubscribeRef.current();
           notificationUnsubscribeRef.current = null;
         }
+        // Unsubscribe from message notifications
+        if (messageNotificationUnsubscribeRef.current) {
+          messageNotificationUnsubscribeRef.current();
+          messageNotificationUnsubscribeRef.current = null;
+        }
         // Delete FCM token
         // Note: We don't have userId here, but it's okay
         // Load all animals (no user to exclude)
@@ -282,6 +303,9 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
   const chatUnsubscribeRef = useRef<(() => void) | null>(null);
   const matchUnsubscribeRef = useRef<(() => void) | null>(null);
   const notificationUnsubscribeRef = useRef<(() => void) | null>(null);
+  const messageNotificationUnsubscribeRef = useRef<(() => void) | null>(null);
+  const navigationRef = useRef<NavigationContainerRef<any> | null>(null);
+  const currentViewingChatIdRef = useRef<string | undefined>(undefined);
 
   // Load user's likes from Firestore
   const loadUserLikes = async (userId: string): Promise<string[]> => {
@@ -484,6 +508,37 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     console.log('Passed animal:', animalId);
   };
 
+  // Handle notification press - navigate to chat
+  const handleNotificationPress = (chatId: string) => {
+    if (!navigationRef.current) {
+      console.log('Navigation ref not set, cannot navigate');
+      return;
+    }
+
+    // Find chat to get user info
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) {
+      console.log('Chat not found:', chatId);
+      return;
+    }
+
+    const otherUserId = chat.userId1 === currentUser.id ? chat.userId2 : chat.userId1;
+    const otherUser = chat.userId1 === currentUser.id 
+      ? (chat.user2Data || {name: 'User', photoURL: undefined})
+      : (chat.user1Data || {name: 'User', photoURL: undefined});
+
+    // Navigate to chat detail
+    navigationRef.current.navigate('Main', {
+      screen: 'ChatDetail',
+      params: {
+        chatId,
+        otherUserId,
+        otherUserName: otherUser.name || 'User',
+        otherUserPhoto: otherUser.photoURL,
+      },
+    });
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -496,8 +551,29 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
       if (notificationUnsubscribeRef.current) {
         notificationUnsubscribeRef.current();
       }
+      if (messageNotificationUnsubscribeRef.current) {
+        messageNotificationUnsubscribeRef.current();
+      }
     };
   }, []);
+
+  // Set navigation ref
+  const setNavigationRef = (ref: NavigationContainerRef<any> | null) => {
+    navigationRef.current = ref;
+  };
+
+  // Set current viewing chat ID (to avoid showing notifications for current chat)
+  const setCurrentViewingChatId = (chatId: string | undefined) => {
+    currentViewingChatIdRef.current = chatId;
+    // Update message notifications listener with new chat ID
+    if (currentUser.id && currentUser.id !== 'user1' && messageNotificationUnsubscribeRef.current) {
+      messageNotificationUnsubscribeRef.current();
+      messageNotificationUnsubscribeRef.current = setupMessageNotifications(
+        currentUser.id,
+        chatId,
+      );
+    }
+  };
 
   return (
     <AppContext.Provider
@@ -515,6 +591,8 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
         passAnimal,
         clearNewMatch,
         createChat,
+        setNavigationRef,
+        setCurrentViewingChatId,
       }}>
       {children}
     </AppContext.Provider>

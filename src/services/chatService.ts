@@ -1,5 +1,7 @@
 import firestore from '@react-native-firebase/firestore';
 import {Message, Chat, User} from '../types';
+import {AppState} from 'react-native';
+import {showMessageNotification} from './notificationService';
 
 const chatsCollection = firestore().collection('chats');
 const messagesCollection = firestore().collection('messages');
@@ -356,5 +358,100 @@ export const getReceiverFCMToken = async (
     console.error('Error getting FCM token:', error);
     return null;
   }
+};
+
+/**
+ * Listen to all messages for a user and show notifications for new messages
+ * This will show notifications when messages arrive, even if user is not viewing that chat
+ */
+export const setupMessageNotifications = (
+  userId: string,
+  currentChatId?: string, // Optional: if user is viewing a chat, don't show notification for that chat
+): (() => void) => {
+  if (!userId || userId === 'user1') {
+    return () => {};
+  }
+
+  let lastMessageIds = new Set<string>();
+  let isInitialLoad = true;
+
+  // Listen to messages without orderBy to avoid index requirement
+  // We'll sort in memory if needed
+  const unsubscribe = messagesCollection
+    .where('receiverId', '==', userId)
+    .limit(100) // Listen to recent messages (increased limit)
+    .onSnapshot(
+      async snapshot => {
+        if (isInitialLoad) {
+          // On initial load, just store message IDs without showing notifications
+          snapshot.forEach(doc => {
+            lastMessageIds.add(doc.id);
+          });
+          isInitialLoad = false;
+          return;
+        }
+
+        // Check for new messages
+        const newMessages: Message[] = [];
+        snapshot.forEach(doc => {
+          if (!lastMessageIds.has(doc.id)) {
+            const data = doc.data();
+            if (data.text && data.senderId && data.chatId !== currentChatId) {
+              // Only show notification if not viewing this chat
+              let timestamp: Date;
+              if (data.timestamp) {
+                timestamp = data.timestamp.toDate();
+              } else {
+                timestamp = new Date();
+              }
+
+              newMessages.push({
+                id: doc.id,
+                chatId: data.chatId || '',
+                senderId: data.senderId,
+                receiverId: data.receiverId || '',
+                text: data.text,
+                timestamp,
+                read: data.read || false,
+              });
+            }
+            lastMessageIds.add(doc.id);
+          }
+        });
+
+        // Show notifications for new messages
+        for (const message of newMessages) {
+          // Only show notification if user is not viewing this specific chat
+          // Show notification regardless of app state (foreground/background)
+          if (message.chatId !== currentChatId) {
+            try {
+              console.log('New message received, showing notification:', message.text);
+              
+              // Get sender name
+              const senderDoc = await usersCollection.doc(message.senderId).get();
+              const senderData = senderDoc.exists() ? (senderDoc.data() as User) : null;
+              const senderName = senderData?.name || 'Someone';
+
+              // Show notification
+              await showMessageNotification(
+                senderName,
+                message.text,
+                message.chatId,
+              );
+              console.log('Notification shown successfully');
+            } catch (error) {
+              console.error('Error showing notification:', error);
+            }
+          } else {
+            console.log('Skipping notification - user is viewing this chat');
+          }
+        }
+      },
+      error => {
+        console.error('Error listening to messages for notifications:', error);
+      },
+    );
+
+  return unsubscribe;
 };
 
