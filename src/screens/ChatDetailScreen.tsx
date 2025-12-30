@@ -10,6 +10,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useRoute, useNavigation} from '@react-navigation/native';
@@ -50,7 +51,38 @@ const ChatDetailScreen = () => {
 
     // Subscribe to messages
     const unsubscribe = getChatMessages(chatId, (newMessages) => {
-      setMessages(newMessages);
+      // Merge real messages from Firestore with any pending optimistic messages
+      setMessages(prev => {
+        // Keep optimistic messages that don't have a matching real message yet
+        const optimisticMessages = prev.filter(msg => msg.id.startsWith('temp-'));
+        const realMessages = newMessages.filter(msg => !msg.id.startsWith('temp-'));
+        
+        // Check if any optimistic message has been replaced by a real one
+        // Match by text, sender, and similar timestamp (within 5 seconds)
+        const replacedOptimisticIds = optimisticMessages
+          .filter(optMsg => {
+            return realMessages.some(realMsg => 
+              realMsg.text === optMsg.text &&
+              realMsg.senderId === optMsg.senderId &&
+              Math.abs(realMsg.timestamp.getTime() - optMsg.timestamp.getTime()) < 5000
+            );
+          })
+          .map(msg => msg.id);
+        
+        // Remove replaced optimistic messages and merge with real messages
+        const remainingOptimistic = optimisticMessages.filter(
+          msg => !replacedOptimisticIds.includes(msg.id)
+        );
+        
+        // Combine real messages with remaining optimistic messages
+        const allMessages = [...realMessages, ...remainingOptimistic];
+        
+        // Sort by timestamp to ensure correct order
+        allMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        
+        return allMessages;
+      });
+      
       // Auto-scroll to bottom when new message arrives
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({animated: true});
@@ -67,6 +99,19 @@ const ChatDetailScreen = () => {
     };
   }, [chatId, currentUser.id, navigation, otherUserName]);
 
+  // Handle keyboard show event to scroll chat to bottom
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({animated: true});
+      }, 100);
+    });
+
+    return () => {
+      showSubscription.remove();
+    };
+  }, []);
+
   const handleSendMessage = async () => {
     if (!inputText.trim() || !chatId || !currentUser.id || currentUser.id === 'user1' || sending) {
       return;
@@ -75,6 +120,26 @@ const ChatDetailScreen = () => {
     const messageText = inputText.trim();
     setInputText('');
     setSending(true);
+
+    // Create optimistic message to show immediately
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimisticMessage: Message = {
+      id: tempId,
+      chatId,
+      senderId: currentUser.id,
+      receiverId: otherUserId,
+      text: messageText,
+      timestamp: new Date(),
+      read: false,
+    };
+
+    // Add optimistic message to UI immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+    
+    // Scroll to bottom to show the new message
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({animated: true});
+    }, 100);
 
     try {
       await sendMessage(chatId, currentUser.id, otherUserId, messageText);
@@ -86,8 +151,15 @@ const ChatDetailScreen = () => {
         messageText,
         chatId,
       );
+      
+      // The real message from Firestore will replace the optimistic one
+      // No need to manually remove it - the onSnapshot listener will handle it
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      
       // Restore input text on error
       setInputText(messageText);
     } finally {
@@ -159,7 +231,7 @@ const ChatDetailScreen = () => {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         <FlatList
           ref={flatListRef}
@@ -170,6 +242,8 @@ const ChatDetailScreen = () => {
           onContentSizeChange={() => {
             flatListRef.current?.scrollToEnd({animated: false});
           }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Icon name="chatbubble-outline" size={60} color={Colors.gray400} />

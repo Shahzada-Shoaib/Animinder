@@ -3,7 +3,7 @@ import {Animal, User, Match, Chat} from '../types';
 import auth from '@react-native-firebase/auth';
 import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals} from '../services/firestoreService';
 import {saveLike, getUserLikes, checkMutualLike} from '../services/likeService';
-import {saveMatch, getUserMatches} from '../services/matchService';
+import {saveMatch, getUserMatches, getUserMatchesRealtime} from '../services/matchService';
 import {getUserChats, createOrGetChat} from '../services/chatService';
 import {initializeNotifications, setupNotificationHandlers, deleteFCMToken} from '../services/notificationService';
 
@@ -160,8 +160,8 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             await loadUserAnimals(firebaseUser.uid);
             // Load user's likes
             const likedIds = await loadUserLikes(firebaseUser.uid);
-            // Load user's matches
-            await loadUserMatches(firebaseUser.uid);
+            // Load user's matches (real-time)
+            loadUserMatches(firebaseUser.uid);
             // Load user's chats (real-time)
             loadUserChats(firebaseUser.uid);
             // Initialize notifications
@@ -194,8 +194,8 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             await loadUserAnimals(firebaseUser.uid);
             // Load user's likes (will be empty for new user)
             const likedIds = await loadUserLikes(firebaseUser.uid);
-            // Load user's matches (will be empty for new user)
-            await loadUserMatches(firebaseUser.uid);
+            // Load user's matches (real-time)
+            loadUserMatches(firebaseUser.uid);
             // Load user's chats (real-time)
             loadUserChats(firebaseUser.uid);
             // Initialize notifications
@@ -245,6 +245,11 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
           chatUnsubscribeRef.current();
           chatUnsubscribeRef.current = null;
         }
+        // Unsubscribe from matches
+        if (matchUnsubscribeRef.current) {
+          matchUnsubscribeRef.current();
+          matchUnsubscribeRef.current = null;
+        }
         // Unsubscribe from notifications
         if (notificationUnsubscribeRef.current) {
           notificationUnsubscribeRef.current();
@@ -275,6 +280,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
   // Chats
   const [chats, setChats] = useState<Chat[]>([]);
   const chatUnsubscribeRef = useRef<(() => void) | null>(null);
+  const matchUnsubscribeRef = useRef<(() => void) | null>(null);
   const notificationUnsubscribeRef = useRef<(() => void) | null>(null);
 
   // Load user's likes from Firestore
@@ -296,17 +302,47 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     }
   };
 
-  // Load user's matches from Firestore
-  const loadUserMatches = async (userId: string) => {
-    try {
-      if (userId && userId !== 'user1') {
-        const userMatches = await getUserMatches(userId);
+  // Load user's matches from Firestore (real-time)
+  const loadUserMatches = (userId: string) => {
+    // Unsubscribe from previous listener
+    if (matchUnsubscribeRef.current) {
+      matchUnsubscribeRef.current();
+      matchUnsubscribeRef.current = null;
+    }
+
+    if (userId && userId !== 'user1') {
+      // Track previous matches to detect new ones
+      let previousMatchIds = new Set<string>();
+      
+      const unsubscribe = getUserMatchesRealtime(userId, (userMatches) => {
+        // Check for new matches
+        const currentMatchIds = new Set(userMatches.map(m => m.id));
+        
+        // Find new matches (matches that weren't in previous set)
+        const newMatches = userMatches.filter(m => !previousMatchIds.has(m.id));
+        
+        // Update previous set
+        previousMatchIds = currentMatchIds;
+        
+        // Update matches state
         setMatches(userMatches);
-      } else {
-        setMatches([]);
-      }
-    } catch (error) {
-      console.error('Error loading user matches:', error);
+        
+        // If there's a new match and user didn't just create it, show notification
+        if (newMatches.length > 0) {
+          // Check if this match was just created by current user (to avoid duplicate notification)
+          const latestNewMatch = newMatches[0]; // Newest match
+          const isMatchCreatedByUser = latestNewMatch.userId1 === userId;
+          
+          // Only show notification if match wasn't created by current user
+          // (because if current user created it, they already saw the modal)
+          if (!isMatchCreatedByUser) {
+            setNewMatch(latestNewMatch);
+          }
+        }
+      });
+      
+      matchUnsubscribeRef.current = unsubscribe;
+    } else {
       setMatches([]);
     }
   };
@@ -425,8 +461,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
           // Save match to Firestore
           await saveMatch(newMatch);
           
-          // Update local state
-          setMatches(prev => [...prev, newMatch]);
+          // Show match modal immediately (real-time listener will update matches list)
           setNewMatch(newMatch);
         }
       }
@@ -454,6 +489,9 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     return () => {
       if (chatUnsubscribeRef.current) {
         chatUnsubscribeRef.current();
+      }
+      if (matchUnsubscribeRef.current) {
+        matchUnsubscribeRef.current();
       }
       if (notificationUnsubscribeRef.current) {
         notificationUnsubscribeRef.current();

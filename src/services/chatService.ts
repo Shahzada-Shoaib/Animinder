@@ -122,28 +122,50 @@ export const getChatMessages = (
 ): () => void => {
   const unsubscribe = messagesCollection
     .where('chatId', '==', chatId)
-    .orderBy('timestamp', 'asc')
     .onSnapshot(
       snapshot => {
         const messages: Message[] = [];
         snapshot.forEach(doc => {
           const data = doc.data();
+          
+          // Skip invalid messages (missing required fields)
+          if (!data.text || !data.senderId) {
+            console.warn('Skipping invalid message:', doc.id, data);
+            return;
+          }
+          
+          // Handle timestamp - it might be null if serverTimestamp() hasn't resolved yet
+          let timestamp: Date;
+          if (data.timestamp) {
+            timestamp = data.timestamp.toDate();
+          } else if (data.timestamp === null) {
+            // If timestamp is explicitly null, use current time as fallback
+            timestamp = new Date();
+          } else {
+            // If timestamp is undefined, use current time
+            timestamp = new Date();
+          }
+          
           messages.push({
             id: doc.id,
             chatId: data.chatId || chatId,
-            senderId: data.senderId || '',
+            senderId: data.senderId,
             receiverId: data.receiverId || '',
-            text: data.text || '',
-            timestamp: data.timestamp
-              ? data.timestamp.toDate()
-              : new Date(),
+            text: data.text,
+            timestamp,
             read: data.read || false,
           });
         });
+        
+        // Sort messages by timestamp to ensure correct order (in case of timing issues)
+        messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        
         callback(messages);
       },
       error => {
         console.error('Error listening to messages:', error);
+        // Call callback with empty array on error to prevent UI issues
+        callback([]);
       },
     );
 
