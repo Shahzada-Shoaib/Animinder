@@ -3,9 +3,10 @@ import {Animal, User, Match, Chat} from '../types';
 import auth from '@react-native-firebase/auth';
 import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals} from '../services/firestoreService';
 import {saveLike, getUserLikes, checkMutualLike} from '../services/likeService';
-import {saveMatch, getUserMatches} from '../services/matchService';
-import {getUserChats, createOrGetChat} from '../services/chatService';
+import {saveMatch, getUserMatches, getUserMatchesRealtime} from '../services/matchService';
+import {getUserChats, createOrGetChat, setupMessageNotifications} from '../services/chatService';
 import {initializeNotifications, setupNotificationHandlers, deleteFCMToken} from '../services/notificationService';
+import {NavigationContainerRef} from '@react-navigation/native';
 
 // Dummy data for MVP
 const dummyAnimals: Animal[] = [
@@ -160,8 +161,8 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             await loadUserAnimals(firebaseUser.uid);
             // Load user's likes
             const likedIds = await loadUserLikes(firebaseUser.uid);
-            // Load user's matches
-            await loadUserMatches(firebaseUser.uid);
+            // Load user's matches (real-time)
+            loadUserMatches(firebaseUser.uid);
             // Load user's chats (real-time)
             loadUserChats(firebaseUser.uid);
             // Initialize notifications
@@ -172,9 +173,16 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             }
             notificationUnsubscribeRef.current = setupNotificationHandlers((chatId) => {
               // Navigate to chat when notification is pressed
-              // This will be handled by navigation listener
-              console.log('Navigate to chat:', chatId);
+              handleNotificationPress(chatId);
             });
+            // Setup message notifications listener
+            if (messageNotificationUnsubscribeRef.current) {
+              messageNotificationUnsubscribeRef.current();
+            }
+            messageNotificationUnsubscribeRef.current = setupMessageNotifications(
+              firebaseUser.uid,
+              currentViewingChatIdRef.current,
+            );
             // Load all animals for swiping (excluding current user's and already liked)
             await loadAllAnimals(firebaseUser.uid, likedIds);
           } else {
@@ -194,8 +202,8 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             await loadUserAnimals(firebaseUser.uid);
             // Load user's likes (will be empty for new user)
             const likedIds = await loadUserLikes(firebaseUser.uid);
-            // Load user's matches (will be empty for new user)
-            await loadUserMatches(firebaseUser.uid);
+            // Load user's matches (real-time)
+            loadUserMatches(firebaseUser.uid);
             // Load user's chats (real-time)
             loadUserChats(firebaseUser.uid);
             // Initialize notifications
@@ -206,8 +214,16 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
             }
             notificationUnsubscribeRef.current = setupNotificationHandlers((chatId) => {
               // Navigate to chat when notification is pressed
-              console.log('Navigate to chat:', chatId);
+              handleNotificationPress(chatId);
             });
+            // Setup message notifications listener
+            if (messageNotificationUnsubscribeRef.current) {
+              messageNotificationUnsubscribeRef.current();
+            }
+            messageNotificationUnsubscribeRef.current = setupMessageNotifications(
+              firebaseUser.uid,
+              currentViewingChatIdRef.current,
+            );
             // Load all animals for swiping (excluding current user's and already liked)
             await loadAllAnimals(firebaseUser.uid, likedIds);
           }
@@ -245,10 +261,20 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
           chatUnsubscribeRef.current();
           chatUnsubscribeRef.current = null;
         }
+        // Unsubscribe from matches
+        if (matchUnsubscribeRef.current) {
+          matchUnsubscribeRef.current();
+          matchUnsubscribeRef.current = null;
+        }
         // Unsubscribe from notifications
         if (notificationUnsubscribeRef.current) {
           notificationUnsubscribeRef.current();
           notificationUnsubscribeRef.current = null;
+        }
+        // Unsubscribe from message notifications
+        if (messageNotificationUnsubscribeRef.current) {
+          messageNotificationUnsubscribeRef.current();
+          messageNotificationUnsubscribeRef.current = null;
         }
         // Delete FCM token
         // Note: We don't have userId here, but it's okay
@@ -275,7 +301,11 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
   // Chats
   const [chats, setChats] = useState<Chat[]>([]);
   const chatUnsubscribeRef = useRef<(() => void) | null>(null);
+  const matchUnsubscribeRef = useRef<(() => void) | null>(null);
   const notificationUnsubscribeRef = useRef<(() => void) | null>(null);
+  const messageNotificationUnsubscribeRef = useRef<(() => void) | null>(null);
+  const navigationRef = useRef<NavigationContainerRef<any> | null>(null);
+  const currentViewingChatIdRef = useRef<string | undefined>(undefined);
 
   // Load user's likes from Firestore
   const loadUserLikes = async (userId: string): Promise<string[]> => {
@@ -296,17 +326,47 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     }
   };
 
-  // Load user's matches from Firestore
-  const loadUserMatches = async (userId: string) => {
-    try {
-      if (userId && userId !== 'user1') {
-        const userMatches = await getUserMatches(userId);
+  // Load user's matches from Firestore (real-time)
+  const loadUserMatches = (userId: string) => {
+    // Unsubscribe from previous listener
+    if (matchUnsubscribeRef.current) {
+      matchUnsubscribeRef.current();
+      matchUnsubscribeRef.current = null;
+    }
+
+    if (userId && userId !== 'user1') {
+      // Track previous matches to detect new ones
+      let previousMatchIds = new Set<string>();
+      
+      const unsubscribe = getUserMatchesRealtime(userId, (userMatches) => {
+        // Check for new matches
+        const currentMatchIds = new Set(userMatches.map(m => m.id));
+        
+        // Find new matches (matches that weren't in previous set)
+        const newMatches = userMatches.filter(m => !previousMatchIds.has(m.id));
+        
+        // Update previous set
+        previousMatchIds = currentMatchIds;
+        
+        // Update matches state
         setMatches(userMatches);
-      } else {
-        setMatches([]);
-      }
-    } catch (error) {
-      console.error('Error loading user matches:', error);
+        
+        // If there's a new match and user didn't just create it, show notification
+        if (newMatches.length > 0) {
+          // Check if this match was just created by current user (to avoid duplicate notification)
+          const latestNewMatch = newMatches[0]; // Newest match
+          const isMatchCreatedByUser = latestNewMatch.userId1 === userId;
+          
+          // Only show notification if match wasn't created by current user
+          // (because if current user created it, they already saw the modal)
+          if (!isMatchCreatedByUser) {
+            setNewMatch(latestNewMatch);
+          }
+        }
+      });
+      
+      matchUnsubscribeRef.current = unsubscribe;
+    } else {
       setMatches([]);
     }
   };
@@ -425,8 +485,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
           // Save match to Firestore
           await saveMatch(newMatch);
           
-          // Update local state
-          setMatches(prev => [...prev, newMatch]);
+          // Show match modal immediately (real-time listener will update matches list)
           setNewMatch(newMatch);
         }
       }
@@ -449,17 +508,72 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     console.log('Passed animal:', animalId);
   };
 
+  // Handle notification press - navigate to chat
+  const handleNotificationPress = (chatId: string) => {
+    if (!navigationRef.current) {
+      console.log('Navigation ref not set, cannot navigate');
+      return;
+    }
+
+    // Find chat to get user info
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) {
+      console.log('Chat not found:', chatId);
+      return;
+    }
+
+    const otherUserId = chat.userId1 === currentUser.id ? chat.userId2 : chat.userId1;
+    const otherUser = chat.userId1 === currentUser.id 
+      ? (chat.user2Data || {name: 'User', photoURL: undefined})
+      : (chat.user1Data || {name: 'User', photoURL: undefined});
+
+    // Navigate to chat detail
+    navigationRef.current.navigate('Main', {
+      screen: 'ChatDetail',
+      params: {
+        chatId,
+        otherUserId,
+        otherUserName: otherUser.name || 'User',
+        otherUserPhoto: otherUser.photoURL,
+      },
+    });
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (chatUnsubscribeRef.current) {
         chatUnsubscribeRef.current();
       }
+      if (matchUnsubscribeRef.current) {
+        matchUnsubscribeRef.current();
+      }
       if (notificationUnsubscribeRef.current) {
         notificationUnsubscribeRef.current();
       }
+      if (messageNotificationUnsubscribeRef.current) {
+        messageNotificationUnsubscribeRef.current();
+      }
     };
   }, []);
+
+  // Set navigation ref
+  const setNavigationRef = (ref: NavigationContainerRef<any> | null) => {
+    navigationRef.current = ref;
+  };
+
+  // Set current viewing chat ID (to avoid showing notifications for current chat)
+  const setCurrentViewingChatId = (chatId: string | undefined) => {
+    currentViewingChatIdRef.current = chatId;
+    // Update message notifications listener with new chat ID
+    if (currentUser.id && currentUser.id !== 'user1' && messageNotificationUnsubscribeRef.current) {
+      messageNotificationUnsubscribeRef.current();
+      messageNotificationUnsubscribeRef.current = setupMessageNotifications(
+        currentUser.id,
+        chatId,
+      );
+    }
+  };
 
   return (
     <AppContext.Provider
@@ -477,6 +591,8 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
         passAnimal,
         clearNewMatch,
         createChat,
+        setNavigationRef,
+        setCurrentViewingChatId,
       }}>
       {children}
     </AppContext.Provider>

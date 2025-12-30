@@ -77,3 +77,74 @@ export const getUserMatches = async (userId: string): Promise<Match[]> => {
   }
 };
 
+/**
+ * Get real-time matches for a user
+ */
+export const getUserMatchesRealtime = (
+  userId: string,
+  callback: (matches: Match[]) => void,
+): (() => void) => {
+  let matchesMap = new Map<string, Match>();
+  
+  const processMatches = () => {
+    const allMatches = Array.from(matchesMap.values());
+    allMatches.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    callback(allMatches);
+  };
+
+  const unsubscribe1 = matchesCollection
+    .where('userId1', '==', userId)
+    .onSnapshot(
+      snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          matchesMap.set(doc.id, {
+            id: doc.id,
+            userId1: data.userId1 || '',
+            userId2: data.userId2 || '',
+            animal1Id: data.animal1Id || '',
+            animal1: data.animal1,
+            animal2Id: data.animal2Id || '',
+            animal2: data.animal2,
+            timestamp: data.createdAt ? data.createdAt.toDate() : new Date(),
+          });
+        });
+        processMatches();
+      },
+      error => {
+        console.error('Error listening to matches (userId1):', error);
+        callback([]);
+      },
+    );
+
+  const unsubscribe2 = matchesCollection
+    .where('userId2', '==', userId)
+    .onSnapshot(
+      snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          matchesMap.set(doc.id, {
+            id: doc.id,
+            userId1: data.userId1 || '',
+            userId2: data.userId2 || '',
+            animal1Id: data.animal1Id || '',
+            animal1: data.animal1,
+            animal2Id: data.animal2Id || '',
+            animal2: data.animal2,
+            timestamp: data.createdAt ? data.createdAt.toDate() : new Date(),
+          });
+        });
+        processMatches();
+      },
+      error => {
+        console.error('Error listening to matches (userId2):', error);
+        callback([]);
+      },
+    );
+
+  return () => {
+    unsubscribe1();
+    unsubscribe2();
+  };
+};
+

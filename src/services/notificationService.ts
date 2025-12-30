@@ -1,6 +1,7 @@
 import messaging from '@react-native-firebase/messaging';
 import firestore from '@react-native-firebase/firestore';
 import {Platform, Alert, AppState} from 'react-native';
+import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import {sendMessage, getReceiverFCMToken} from './chatService';
 
 const usersCollection = firestore().collection('users');
@@ -10,33 +11,35 @@ const usersCollection = firestore().collection('users');
  */
 export const requestNotificationPermission = async (): Promise<boolean> => {
   try {
-    if (Platform.OS === 'android') {
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-      if (enabled) {
-        console.log('Notification permission granted');
-        return true;
-      } else {
-        console.log('Notification permission denied');
-        return false;
+    // Use notifee for local notifications
+    const settings = await notifee.requestPermission();
+    const enabled = settings.authorizationStatus >= 1; // 1 = AUTHORIZED, 2 = PROVISIONAL
+    
+    console.log('Notification permission status:', settings.authorizationStatus);
+    
+    if (enabled) {
+      console.log('Notification permission granted');
+      
+      // Create Android channel
+      if (Platform.OS === 'android') {
+        try {
+          await notifee.createChannel({
+            id: 'messages',
+            name: 'Messages',
+            importance: AndroidImportance.HIGH,
+            sound: 'default',
+            vibration: true,
+          });
+          console.log('Android notification channel created');
+        } catch (error) {
+          console.error('Error creating Android channel:', error);
+        }
       }
+      
+      return true;
     } else {
-      // iOS
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-      if (enabled) {
-        console.log('Notification permission granted');
-        return true;
-      } else {
-        console.log('Notification permission denied');
-        return false;
-      }
+      console.log('Notification permission denied');
+      return false;
     }
   } catch (error) {
     console.error('Error requesting notification permission:', error);
@@ -94,9 +97,62 @@ export const deleteFCMToken = async (userId: string): Promise<void> => {
 };
 
 /**
+ * Show local notification when message arrives
+ * This will be called from chatService when a new message is received
+ */
+export const showMessageNotification = async (
+  senderName: string,
+  messageText: string,
+  chatId: string,
+): Promise<void> => {
+  try {
+    // Check if permission is granted
+    const settings = await notifee.getNotificationSettings();
+    if (settings.authorizationStatus < 1) {
+      console.log('Notification permission not granted');
+      return;
+    }
+
+    // Create/ensure Android channel exists
+    if (Platform.OS === 'android') {
+      await notifee.createChannel({
+        id: 'messages',
+        name: 'Messages',
+        importance: AndroidImportance.HIGH,
+        sound: 'default',
+        vibration: true,
+      });
+    }
+
+    // Display notification
+    console.log('Displaying notification:', { senderName, messageText, chatId });
+    await notifee.displayNotification({
+      title: senderName || 'New Message',
+      body: messageText,
+      data: { chatId },
+      android: {
+        channelId: 'messages',
+        importance: AndroidImportance.HIGH,
+        pressAction: {
+          id: 'default',
+        },
+        sound: 'default',
+        // Remove smallIcon if it doesn't exist - Android will use default
+      },
+      ios: {
+        sound: 'default',
+      },
+    });
+    console.log('Notification displayed successfully');
+  } catch (error) {
+    console.error('Error showing notification:', error);
+  }
+};
+
+/**
  * Send notification to receiver when message is sent
- * Note: In production, this should be done via Cloud Functions
- * For now, we'll use a client-side approach (limited)
+ * Note: This is kept for backward compatibility but won't do anything
+ * Notifications are now shown when messages are received via Firestore listeners
  */
 export const sendNotificationToReceiver = async (
   receiverId: string,
@@ -104,22 +160,9 @@ export const sendNotificationToReceiver = async (
   messageText: string,
   chatId: string,
 ): Promise<void> => {
-  try {
-    // In a real app, you would call a Cloud Function here
-    // For now, we'll just log it
-    // The actual notification will be sent via Firestore triggers or Cloud Functions
-    console.log('Should send notification to:', receiverId);
-    console.log('Message:', messageText);
-    console.log('Chat ID:', chatId);
-
-    // TODO: Implement Cloud Function to send FCM notification
-    // The Cloud Function should:
-    // 1. Get receiver's FCM token from Firestore
-    // 2. Send notification using Firebase Admin SDK
-    // 3. Handle notification payload with chatId for navigation
-  } catch (error) {
-    console.error('Error sending notification:', error);
-  }
+  // Notifications are now handled by chatService when messages arrive
+  // This function is kept for backward compatibility
+  console.log('Notification will be shown when message is received');
 };
 
 /**
@@ -169,41 +212,22 @@ export const setupBackgroundMessageHandler = (): void => {
 export const setupNotificationHandlers = (
   onNotificationPress: (chatId: string) => void,
 ): (() => void) => {
-  // Handle notification when app is opened from killed state
-  messaging()
-    .getInitialNotification()
-    .then(remoteMessage => {
-      if (remoteMessage) {
-        console.log('Notification opened app:', remoteMessage);
-        if (remoteMessage.data?.chatId) {
-          onNotificationPress(remoteMessage.data.chatId);
-        }
+  // Handle foreground notification press (when app is open)
+  const unsubscribeForeground = notifee.onForegroundEvent(async ({ type, detail }) => {
+    if (type === EventType.PRESS) {
+      const chatId = detail.notification?.data?.chatId as string;
+      if (chatId) {
+        console.log('Foreground notification pressed, chatId:', chatId);
+        onNotificationPress(chatId);
       }
-    });
-
-  // Handle notification when app is in background
-  const unsubscribeNotificationOpened = messaging().onNotificationOpenedApp(
-    remoteMessage => {
-      console.log('Notification opened app from background:', remoteMessage);
-      if (remoteMessage.data?.chatId) {
-        onNotificationPress(remoteMessage.data.chatId);
-      }
-    },
-  );
-
-  // Handle foreground messages
-  const unsubscribeForeground = setupForegroundMessageHandler();
-
-  // Handle token refresh
-  const unsubscribeTokenRefresh = messaging().onTokenRefresh(async token => {
-    console.log('FCM token refreshed:', token);
-    // Token will be saved when user is logged in
+    }
   });
 
+  // Handle background notification press (when app is in background)
+  // This is set up in index.js as it needs to be outside React lifecycle
+
   return () => {
-    unsubscribeNotificationOpened();
     unsubscribeForeground();
-    unsubscribeTokenRefresh();
   };
 };
 
@@ -212,14 +236,13 @@ export const setupNotificationHandlers = (
  */
 export const initializeNotifications = async (userId: string): Promise<void> => {
   try {
-    // Request permission
+    // Request permission for local notifications
     await requestNotificationPermission();
     
-    // Get and save token
-    await getAndSaveFCMToken(userId);
-
-    // Setup background handler (must be called at app level)
-    setupBackgroundMessageHandler();
+    // Keep FCM token for future use (if needed for push notifications)
+    if (userId && userId !== 'user1') {
+      await getAndSaveFCMToken(userId);
+    }
   } catch (error) {
     console.error('Error initializing notifications:', error);
   }
