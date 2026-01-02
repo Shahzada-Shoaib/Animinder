@@ -74,7 +74,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onSkip }) => {
         {/* Logo/Icon Area */}
         <View style={styles.logoContainer}>
           <Icon name="paw" size={80} color={Colors.primary} style={styles.logoIcon} />
-          <Text style={styles.appName}>Animinder</Text>
+          <Text style={styles.appName}>Pet Mates</Text>
           <Text style={styles.tagline}>Find your pet's perfect match</Text>
         </View>
 

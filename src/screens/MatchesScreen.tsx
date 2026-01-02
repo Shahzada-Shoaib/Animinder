@@ -6,15 +6,21 @@ import {
   SafeAreaView,
   ScrollView,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {useNavigation} from '@react-navigation/native';
 import {useApp} from '../context/AppContext';
 import {getUserMatches} from '../services/matchService';
+import {createOrGetChat} from '../services/chatService';
+import {getUser} from '../services/firestoreService';
 import auth from '@react-native-firebase/auth';
 import {Colors} from '../utils/colors';
+import {Match} from '../types';
 
 const MatchesScreen = () => {
   const {matches, currentUser} = useApp();
+  const navigation = useNavigation();
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -31,6 +37,29 @@ const MatchesScreen = () => {
 
     loadMatches();
   }, [currentUser.id]);
+
+  const handleMatchPress = async (match: Match) => {
+    if (currentUser.id === 'user1') {
+      return;
+    }
+
+    try {
+      const otherUserId =
+        match.userId1 === currentUser.id ? match.userId2 : match.userId1;
+
+      const otherUser = await getUser(otherUserId);
+      const chat = await createOrGetChat(currentUser.id, otherUserId);
+
+      navigation.navigate('ChatDetail', {
+        chatId: chat.id,
+        otherUserId: otherUserId,
+        otherUserName: otherUser?.name || 'User',
+        otherUserPhoto: otherUser?.photoURL,
+      });
+    } catch (error) {
+      console.error('Error opening chat:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,7 +79,12 @@ const MatchesScreen = () => {
         ) : (
           <View style={styles.matchesList}>
             {matches.map(match => (
-              <View key={match.id} style={styles.matchCard}>
+              <TouchableOpacity
+                key={match.id}
+                style={styles.matchCard}
+                activeOpacity={0.7}
+                onPress={() => handleMatchPress(match)}
+                disabled={currentUser.id === 'user1'}>
                 <View style={styles.matchHeader}>
                   <Text style={styles.matchTitle}>It's a Match!</Text>
                   <Text style={styles.matchDate}>
@@ -83,7 +117,7 @@ const MatchesScreen = () => {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}

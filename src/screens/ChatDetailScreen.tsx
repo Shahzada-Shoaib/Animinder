@@ -32,7 +32,7 @@ const ChatDetailScreen = () => {
   const navigation = useNavigation();
   const {chatId, otherUserId, otherUserName, otherUserPhoto} =
     (route.params as RouteParams) || {};
-  const {currentUser} = useApp();
+  const {currentUser, setCurrentViewingChatId} = useApp();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);

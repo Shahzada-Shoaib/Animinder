@@ -66,6 +66,8 @@ interface AppContextType {
   passAnimal: (animalId: string) => void;
   clearNewMatch: () => void;
   createChat: (otherUserId: string) => Promise<Chat | null>;
+  setNavigationRef: (ref: NavigationContainerRef<any> | null) => void;
+  setCurrentViewingChatId: (chatId: string | undefined) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);

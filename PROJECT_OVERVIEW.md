@@ -1,4 +1,4 @@
-# Animinder 🐾
+# Pet Mates 🐾
 
 Ek Tinder-style pet matching app jahan log apne pets ko list kar sakte hain aur doosre pets ke saath match kar sakte hain!
 

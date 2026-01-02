@@ -11,6 +11,7 @@ import MatchesScreen from '../screens/MatchesScreen';
 import ChatsScreen from '../screens/ChatsScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import LoginScreen from '../screens/LoginScreen';
+import LoadingScreen from '../components/LoadingScreen';
 import {Colors} from '../utils/colors';
 import {useApp} from '../context/AppContext';
 
@@ -127,9 +128,9 @@ const AppNavigator = () => {
     return unsubscribe;
   }, []);
 
-  // Show nothing while checking auth state
+  // Show loading screen while checking auth state
   if (isAuthenticated === null) {
-    return null;
+    return <LoadingScreen />;
   }
 
   // Allow access to main app if authenticated OR if user skipped login
