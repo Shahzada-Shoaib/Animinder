@@ -43,7 +43,25 @@ service cloud.firestore {
     }
     
     // Messages collection - CRITICAL for chat functionality
+    // OLD STRUCTURE (kept for backward compatibility during migration)
     match /messages/{messageId} {
+      // Allow read if user is sender or receiver
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == resource.data.senderId || 
+         request.auth.uid == resource.data.receiverId);
+      
+      // Allow create if user is the sender
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.senderId;
+      
+      // Allow update (for marking as read) if user is the receiver
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.receiverId;
+    }
+    
+    // NEW STRUCTURE: Messages subcollection (RECOMMENDED)
+    // Messages are now stored in chats/{chatId}/messages subcollection
+    match /chats/{chatId}/messages/{messageId} {
       // Allow read if user is sender or receiver
       allow read: if isAuthenticated() && 
         (request.auth.uid == resource.data.senderId || 
