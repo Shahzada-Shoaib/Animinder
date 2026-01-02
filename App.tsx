@@ -1,5 +1,5 @@
 /**
- * Animinder - Tinder for Animals
+ * Pet Mates - Tinder for Animals
  * A pet matching app
  *
  * @format

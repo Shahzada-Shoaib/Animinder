@@ -3,4 +3,5 @@ export { default as AnimalCard } from './AnimalCard';
 export { default as SwipeCard } from './SwipeCard';
 export { default as Button } from './Button';
 export { default as AddAnimalModal } from './AddAnimalModal';
+export { default as LoadingScreen } from './LoadingScreen';
 

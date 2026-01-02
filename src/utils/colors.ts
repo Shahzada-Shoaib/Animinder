@@ -1,4 +1,4 @@
-// Modern Color Palette for Animinder
+// Modern Color Palette for Pet Mates
 export const Colors = {
   // Primary Colors
   primary: '#FF6B9D',

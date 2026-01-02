@@ -1,4 +1,4 @@
-# Animinder - Quick Start Guide 🚀
+# Pet Mates - Quick Start Guide 🚀
 
 ## Setup (Pehli Dafa)
 

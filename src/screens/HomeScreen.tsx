@@ -87,14 +87,10 @@ const HomeScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>Animinder</Text>
+          <Text style={styles.logoText}>Pet Mates</Text>
           <Icon name="paw" size={24} color={Colors.primary} style={styles.logoIcon} />
         </View>
-        <View style={styles.counterBadge}>
-          <Text style={styles.counterText}>
-            {animals.length - currentIndex} left
-          </Text>
-        </View>
+       
       </View>
 
       {/* <GoogleLogin /> */}
