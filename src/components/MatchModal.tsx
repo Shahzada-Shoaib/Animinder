@@ -108,6 +108,13 @@ const MatchModal: React.FC<MatchModalProps> = ({
               transform: [{scale: scaleAnim}],
             },
           ]}>
+          <TouchableOpacity
+            style={styles.closeIconButton}
+            onPress={onClose}
+            activeOpacity={0.7}>
+            <Icon name="close" size={24} color={Colors.textSecondary} />
+          </TouchableOpacity>
+          
           <View style={styles.titleContainer}>
             <Text style={styles.title}>It's a Match!</Text>
             <Icon name="trophy" size={32} color={Colors.primary} style={styles.titleIcon} />
@@ -215,6 +222,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  closeIconButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 });
 

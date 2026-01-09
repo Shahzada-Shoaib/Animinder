@@ -68,6 +68,7 @@ interface AppContextType {
   createChat: (otherUserId: string) => Promise<Chat | null>;
   setNavigationRef: (ref: NavigationContainerRef<any> | null) => void;
   setCurrentViewingChatId: (chatId: string | undefined) => void;
+  setCurrentUser: (user: User) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -595,6 +596,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
         createChat,
         setNavigationRef,
         setCurrentViewingChatId,
+        setCurrentUser,
       }}>
       {children}
     </AppContext.Provider>

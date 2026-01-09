@@ -12,12 +12,14 @@ import {
   Image,
   Alert,
   PermissionsAndroid,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
 import {Animal} from '../types';
 import {Colors} from '../utils/colors';
 import {Shadows} from '../utils/shadows';
+import {uploadPetImage} from '../services/imageUploadService';
 
 interface AddAnimalModalProps {
   visible: boolean;
@@ -38,6 +40,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const [breed, setBreed] = useState('');
   const [bio, setBio] = useState('');
   const [imageUri, setImageUri] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
 
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
@@ -239,7 +242,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
     }
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!name.trim() || !type.trim() || !age || !breed.trim()) {
       Alert.alert('Error', 'Please fill all fields');
       return;
@@ -251,13 +254,58 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
       return;
     }
 
+    // If image is selected, upload it first
+    let imageUrl = 'https://via.placeholder.com/400'; // Default placeholder
+    
+    if (imageUri) {
+      try {
+        setUploading(true);
+        
+        // Upload image to Hostinger
+        imageUrl = await uploadPetImage(imageUri);
+        
+        console.log('Image uploaded successfully, URL:', imageUrl);
+      } catch (error: any) {
+        console.error('Image upload error:', error);
+        
+        // Show error and ask user what to do
+        Alert.alert(
+          'Upload Failed',
+          error.message || 'Failed to upload image. Would you like to continue without the image?',
+          [
+            {
+              text: 'Try Again',
+              onPress: () => {
+                setUploading(false);
+              },
+            },
+            {
+              text: 'Continue Without Image',
+              style: 'cancel',
+              onPress: () => {
+                // Continue with placeholder image
+                proceedWithAdd(imageUrl, ageNumber);
+              },
+            },
+          ],
+        );
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    proceedWithAdd(imageUrl, ageNumber);
+  };
+
+  const proceedWithAdd = (imageUrl: string, ageNumber: number) => {
     const newAnimal: Animal = {
       id: `animal-${Date.now()}`,
       name: name.trim(),
       type: type.trim(),
       age: ageNumber,
       breed: breed.trim(),
-      image: imageUri || 'https://via.placeholder.com/400',
+      image: imageUrl, // Use uploaded URL instead of local URI
       bio: bio.trim(),
       ownerId: userId,
     };
@@ -414,11 +462,21 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={styles.addButton}
+                  style={[styles.addButton, uploading && styles.addButtonDisabled]}
                   onPress={handleAdd}
+                  disabled={uploading}
                   activeOpacity={0.8}>
-                  <Icon name="checkmark" size={20} color={Colors.white} style={styles.addButtonIcon} />
-                  <Text style={styles.addButtonText}>Add Pet</Text>
+                  {uploading ? (
+                    <>
+                      <ActivityIndicator size="small" color={Colors.white} style={styles.addButtonIcon} />
+                      <Text style={styles.addButtonText}>Uploading...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="checkmark" size={20} color={Colors.white} style={styles.addButtonIcon} />
+                      <Text style={styles.addButtonText}>Add Pet</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -658,6 +716,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.white,
     letterSpacing: 0.3,
+  },
+  addButtonDisabled: {
+    opacity: 0.6,
   },
 });
 
