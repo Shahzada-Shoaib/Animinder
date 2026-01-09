@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   Modal,
   View,
@@ -7,19 +7,32 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {useNavigation} from '@react-navigation/native';
+import auth from '@react-native-firebase/auth';
 import {Match} from '../types';
 import {Colors} from '../utils/colors';
+import {getUser} from '../services/firestoreService';
+import {createOrGetChat} from '../services/chatService';
 
 interface MatchModalProps {
   visible: boolean;
   match: Match | null;
   onClose: () => void;
+  currentUserId: string;
 }
 
-const MatchModal: React.FC<MatchModalProps> = ({visible, match, onClose}) => {
+const MatchModal: React.FC<MatchModalProps> = ({
+  visible,
+  match,
+  onClose,
+  currentUserId,
+}) => {
   const scaleAnim = React.useRef(new Animated.Value(0)).current;
+  const navigation = useNavigation();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   React.useEffect(() => {
     if (visible) {
@@ -33,6 +46,51 @@ const MatchModal: React.FC<MatchModalProps> = ({visible, match, onClose}) => {
       scaleAnim.setValue(0);
     }
   }, [visible]);
+
+  const handleContinue = async () => {
+    if (!match || isNavigating) return;
+
+    const firebaseUser = auth().currentUser;
+    if (!firebaseUser || currentUserId === 'user1') {
+      onClose();
+      return;
+    }
+
+    try {
+      setIsNavigating(true);
+
+      // Get the other user's ID
+      const otherUserId =
+        match.userId1 === currentUserId ? match.userId2 : match.userId1;
+
+      // Fetch the other user's data
+      const otherUser = await getUser(otherUserId);
+
+      // Create or get chat
+      const chat = await createOrGetChat(currentUserId, otherUserId);
+
+      // Close modal first
+      onClose();
+
+      // Navigate to chat screen
+      const parent = navigation.getParent();
+      (parent || navigation).navigate('ChatDetail', {
+        chatId: chat.id,
+        otherUserId: otherUserId,
+        otherUserName: otherUser?.name || 'User',
+        otherUserPhoto: otherUser?.photoURL,
+      });
+    } catch (error: any) {
+      console.error('Error opening chat:', error);
+      Alert.alert(
+        'Error',
+        error?.message || 'Failed to start chat. Please try again.',
+        [{text: 'OK'}],
+      );
+    } finally {
+      setIsNavigating(false);
+    }
+  };
 
   if (!match) return null;
 
@@ -76,8 +134,13 @@ const MatchModal: React.FC<MatchModalProps> = ({visible, match, onClose}) => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Continue</Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={handleContinue}
+            disabled={isNavigating}>
+            <Text style={styles.closeButtonText}>
+              {isNavigating ? 'Opening...' : 'Continue'}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

@@ -131,6 +131,7 @@ const HomeScreen = () => {
         visible={matchModalVisible}
         match={newMatch}
         onClose={handleCloseMatchModal}
+        currentUserId={currentUser.id}
       />
     </SafeAreaView>
   );
