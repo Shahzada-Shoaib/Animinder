@@ -1,7 +1,7 @@
 import React, {createContext, useState, useContext, ReactNode, useEffect, useRef} from 'react';
 import {Animal, User, Match, Chat} from '../types';
 import auth from '@react-native-firebase/auth';
-import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals} from '../services/firestoreService';
+import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals, getAnimal} from '../services/firestoreService';
 import {saveLike, getUserLikes, checkMutualLike} from '../services/likeService';
 import {saveMatch, getUserMatches, getUserMatchesRealtime} from '../services/matchService';
 import {getUserChats, createOrGetChat, setupMessageNotifications} from '../services/chatService';
@@ -69,6 +69,7 @@ interface AppContextType {
   setNavigationRef: (ref: NavigationContainerRef<any> | null) => void;
   setCurrentViewingChatId: (chatId: string | undefined) => void;
   setCurrentUser: (user: User) => void;
+  refreshMatches: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -331,6 +332,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
 
   // Load user's matches from Firestore (real-time)
   const loadUserMatches = (userId: string) => {
+    console.log('[AppContext] loadUserMatches called for userId:', userId);
     // Unsubscribe from previous listener
     if (matchUnsubscribeRef.current) {
       matchUnsubscribeRef.current();
@@ -342,6 +344,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
       let previousMatchIds = new Set<string>();
       
       const unsubscribe = getUserMatchesRealtime(userId, (userMatches) => {
+        console.log('[AppContext] getUserMatchesRealtime callback received', userMatches.length, 'matches');
         // Check for new matches
         const currentMatchIds = new Set(userMatches.map(m => m.id));
         
@@ -352,6 +355,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
         previousMatchIds = currentMatchIds;
         
         // Update matches state
+        console.log('[AppContext] Setting matches state:', userMatches.length);
         setMatches(userMatches);
         
         // If there's a new match and user didn't just create it, show notification
@@ -370,7 +374,21 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
       
       matchUnsubscribeRef.current = unsubscribe;
     } else {
+      console.log('[AppContext] Setting matches to empty array');
       setMatches([]);
+    }
+  };
+
+  // Refresh matches manually
+  const refreshMatches = async () => {
+    if (currentUser.id && currentUser.id !== 'user1') {
+      try {
+        const userMatches = await getUserMatches(currentUser.id);
+        console.log('[AppContext] refreshMatches loaded', userMatches.length, 'matches');
+        setMatches(userMatches);
+      } catch (error) {
+        console.error('[AppContext] Error refreshing matches:', error);
+      }
     }
   };
 
@@ -454,26 +472,65 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     }
 
     try {
+      console.log('[likeAnimal] Liking animal:', {
+        animalId,
+        animalName: animal.name,
+        ownerId: animal.ownerId,
+        currentUserId: currentUser.id,
+      });
+
       // 1. Save like to Firestore
       await saveLike(currentUser.id, animalId, animal.ownerId);
       
       // 2. Update local state
       setLikedAnimals(prev => [...prev, animalId]);
       
-      // 3. Check for mutual like
+      // 3. Get all current user's animals (Firestore + dummy if applicable)
+      // Note: For now, we only check Firestore animals, but the checkMutualLike
+      // function will check if owner liked any animal with ownerId = currentUser.id
+      const allUserAnimals = [...userAnimals];
+      console.log('[likeAnimal] Current user animals count:', allUserAnimals.length);
+      
+      // 4. Check for mutual like
       const mutualLike = await checkMutualLike(
         currentUser.id,
         animal.ownerId,
-        userAnimals,
+        allUserAnimals,
       );
       
-      // 4. If mutual like, create match
+      console.log('[likeAnimal] Mutual like result:', mutualLike);
+      
+      // 5. If mutual like, create match
       if (mutualLike.isMatch && mutualLike.matchedAnimalId) {
-        const matchedAnimal = userAnimals.find(
+        let matchedAnimal = allUserAnimals.find(
           a => a.id === mutualLike.matchedAnimalId,
         );
         
+        // If not found in userAnimals, try to find in all animals (including dummy)
+        if (!matchedAnimal) {
+          console.log('[likeAnimal] Matched animal not found in userAnimals, trying to find in all animals');
+          matchedAnimal = animals.find(a => a.id === mutualLike.matchedAnimalId);
+        }
+        
+        // If still not found, try to fetch from Firestore
+        if (!matchedAnimal) {
+          console.log('[likeAnimal] Matched animal not found locally, fetching from Firestore');
+          try {
+            matchedAnimal = await getAnimal(mutualLike.matchedAnimalId);
+            if (matchedAnimal) {
+              console.log('[likeAnimal] Matched animal fetched from Firestore');
+            }
+          } catch (error) {
+            console.error('[likeAnimal] Error fetching matched animal from Firestore:', error);
+          }
+        }
+        
         if (matchedAnimal) {
+          console.log('[likeAnimal] ✅ Creating match!', {
+            matchedAnimalId: matchedAnimal.id,
+            matchedAnimalName: matchedAnimal.name,
+          });
+          
           const newMatch: Match = {
             id: `match-${Date.now()}`,
             userId1: currentUser.id,
@@ -487,16 +544,23 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
           
           // Save match to Firestore
           await saveMatch(newMatch);
+          console.log('[likeAnimal] Match saved to Firestore');
           
           // Show match modal immediately (real-time listener will update matches list)
           setNewMatch(newMatch);
+        } else {
+          console.error('[likeAnimal] ❌ Matched animal not found even after fetching:', mutualLike.matchedAnimalId);
+          // Even if animal not found, we can still create match with just IDs
+          // But for now, we'll skip it to avoid incomplete matches
         }
+      } else {
+        console.log('[likeAnimal] No mutual like found');
       }
       
-      // 5. Remove from swipe deck (already liked)
+      // 6. Remove from swipe deck (already liked)
       setAnimals(prev => prev.filter(a => a.id !== animalId));
     } catch (error) {
-      console.error('Error liking animal:', error);
+      console.error('[likeAnimal] Error liking animal:', error);
     }
   };
 
@@ -597,6 +661,7 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
         setNavigationRef,
         setCurrentViewingChatId,
         setCurrentUser,
+        refreshMatches,
       }}>
       {children}
     </AppContext.Provider>

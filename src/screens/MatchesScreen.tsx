@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {useApp} from '../context/AppContext';
 import {getUserMatches} from '../services/matchService';
 import {createOrGetChat} from '../services/chatService';
@@ -19,24 +19,22 @@ import {Colors} from '../utils/colors';
 import {Match} from '../types';
 
 const MatchesScreen = () => {
-  const {matches, currentUser} = useApp();
+  const {matches, currentUser, refreshMatches} = useApp();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const loadMatches = async () => {
-      const firebaseUser = auth().currentUser;
-      if (firebaseUser && currentUser.id !== 'user1') {
-        try {
-          const userMatches = await getUserMatches(currentUser.id);
-          // Matches are already loaded in AppContext, this is just for refresh
-        } catch (error) {
-          console.error('Error loading matches:', error);
-        }
+  // Refresh matches when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[MatchesScreen] Screen focused, refreshing matches');
+      if (currentUser.id && currentUser.id !== 'user1') {
+        refreshMatches();
       }
-    };
+    }, [currentUser.id, refreshMatches]),
+  );
 
-    loadMatches();
-  }, [currentUser.id]);
+  useEffect(() => {
+    console.log('[MatchesScreen] Matches updated:', matches.length);
+  }, [matches]);
 
   const handleMatchPress = async (match: Match) => {
     if (currentUser.id === 'user1') {
