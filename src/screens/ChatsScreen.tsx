@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
@@ -17,6 +18,15 @@ import {Chat} from '../types';
 const ChatsScreen = () => {
   const {chats, currentUser} = useApp();
   const navigation = useNavigation();
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [navigatingChatId, setNavigatingChatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, [chats]);
 
   const formatTime = (date?: Date): string => {
     if (!date) return '';
@@ -48,6 +58,9 @@ const ChatsScreen = () => {
   };
 
   const handleChatPress = (chat: Chat) => {
+    if (navigatingChatId) return;
+    
+    setNavigatingChatId(chat.id);
     const otherUser = getOtherUser(chat);
     navigation.navigate('ChatDetail', {
       chatId: chat.id,
@@ -55,6 +68,8 @@ const ChatsScreen = () => {
       otherUserName: otherUser.name || 'User',
       otherUserPhoto: otherUser.photoURL,
     });
+    // Reset after navigation
+    setTimeout(() => setNavigatingChatId(null), 500);
   };
 
   return (
@@ -65,7 +80,12 @@ const ChatsScreen = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
-        {chats.length === 0 ? (
+        {isLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Loading chats...</Text>
+          </View>
+        ) : chats.length === 0 ? (
           <View style={styles.emptyState}>
             <Icon name="chatbubble" size={80} color={Colors.primary} style={styles.emptyIcon} />
             <Text style={styles.emptyText}>No chats yet</Text>
@@ -81,13 +101,15 @@ const ChatsScreen = () => {
               return (
                 <TouchableOpacity
                   key={chat.id}
-                  style={styles.chatCard}
+                  style={[styles.chatCard, navigatingChatId === chat.id && styles.chatCardLoading]}
                   activeOpacity={0.7}
-                  onPress={() => handleChatPress(chat)}>
-                  {otherUser.photoURL ? (
+                  onPress={() => handleChatPress(chat)}
+                  disabled={navigatingChatId === chat.id}>
+                  {otherUser.photoURL && !imageErrors.has(chat.id) ? (
                     <Image
                       source={{uri: otherUser.photoURL}}
                       style={styles.chatImage}
+                      onError={() => setImageErrors(prev => new Set(prev).add(chat.id))}
                     />
                   ) : (
                     <View style={[styles.chatImage, styles.defaultAvatar]}>
@@ -101,17 +123,23 @@ const ChatsScreen = () => {
                     </Text>
                   </View>
                   <View style={styles.chatMeta}>
-                    {chat.lastMessageTime && (
-                      <Text style={styles.chatTime}>
-                        {formatTime(chat.lastMessageTime)}
-                      </Text>
-                    )}
-                    {unreadCount > 0 && (
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </Text>
-                      </View>
+                    {navigatingChatId === chat.id ? (
+                      <ActivityIndicator size="small" color={Colors.primary} />
+                    ) : (
+                      <>
+                        {chat.lastMessageTime && (
+                          <Text style={styles.chatTime}>
+                            {formatTime(chat.lastMessageTime)}
+                          </Text>
+                        )}
+                        {unreadCount > 0 && (
+                          <View style={styles.badge}>
+                            <Text style={styles.badgeText}>
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </Text>
+                          </View>
+                        )}
+                      </>
                     )}
                   </View>
                 </TouchableOpacity>
@@ -149,6 +177,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 15,
   },
+  loadingState: {
+    alignItems: 'center',
+    padding: 40,
+    marginTop: 100,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
   emptyState: {
     alignItems: 'center',
     padding: 40,
@@ -183,6 +222,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  chatCardLoading: {
+    opacity: 0.6,
   },
   chatImage: {
     width: 60,

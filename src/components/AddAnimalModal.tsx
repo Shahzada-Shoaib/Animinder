@@ -41,6 +41,53 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   const [bio, setBio] = useState('');
   const [imageUri, setImageUri] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  
+  // Validation states
+  const [errors, setErrors] = useState<{
+    name?: string;
+    type?: string;
+    age?: string;
+    breed?: string;
+  }>({});
+  
+  // Helper functions for validation
+  const validateName = (value: string) => {
+    if (!value.trim()) {
+      return 'Name is required';
+    }
+    if (value.trim().length < 2) {
+      return 'Name must be at least 2 characters';
+    }
+    return '';
+  };
+  
+  const validateType = (value: string) => {
+    if (!value.trim()) {
+      return 'Type is required';
+    }
+    return '';
+  };
+  
+  const validateAge = (value: string) => {
+    if (!value.trim()) {
+      return 'Age is required';
+    }
+    const ageNumber = parseInt(value, 10);
+    if (isNaN(ageNumber)) {
+      return 'Age must be a number';
+    }
+    if (ageNumber <= 0 || ageNumber > 30) {
+      return 'Age must be between 1 and 30';
+    }
+    return '';
+  };
+  
+  const validateBreed = (value: string) => {
+    if (!value.trim()) {
+      return 'Breed is required';
+    }
+    return '';
+  };
 
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
@@ -177,7 +224,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
       if (result.assets && result.assets[0]?.uri) {
         setImageUri(result.assets[0].uri);
         console.log('Camera photo URI:', result.assets[0].uri);
-        Alert.alert('Success', 'Photo captured successfully!');
+        // Removed success alert - image preview is enough feedback
       } else {
         Alert.alert('Error', 'No image was captured');
       }
@@ -232,7 +279,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
       if (result.assets && result.assets[0]?.uri) {
         setImageUri(result.assets[0].uri);
         console.log('Gallery photo URI:', result.assets[0].uri);
-        Alert.alert('Success', 'Photo selected successfully!');
+        // Removed success alert - image preview is enough feedback
       } else {
         Alert.alert('Error', 'No image was selected');
       }
@@ -243,16 +290,24 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
   };
 
   const handleAdd = async () => {
-    if (!name.trim() || !type.trim() || !age || !breed.trim()) {
-      Alert.alert('Error', 'Please fill all fields');
+    // Validate all fields
+    const nameError = validateName(name);
+    const typeError = validateType(type);
+    const ageError = validateAge(age);
+    const breedError = validateBreed(breed);
+    
+    if (nameError || typeError || ageError || breedError) {
+      setErrors({
+        name: nameError || undefined,
+        type: typeError || undefined,
+        age: ageError || undefined,
+        breed: breedError || undefined,
+      });
+      Alert.alert('Validation Error', 'Please fix the errors in the form');
       return;
     }
 
     const ageNumber = parseInt(age, 10);
-    if (isNaN(ageNumber) || ageNumber <= 0 || ageNumber > 30) {
-      Alert.alert('Error', 'Please enter valid age (1-30)');
-      return;
-    }
 
     // If image is selected, upload it first
     let imageUrl = 'https://via.placeholder.com/400'; // Default placeholder
@@ -313,12 +368,22 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
     onAdd(newAnimal);
     
     // Reset form
+    resetForm();
+    onClose();
+  };
+
+  const resetForm = () => {
     setName('');
     setType('');
     setAge('');
     setBreed('');
     setBio('');
     setImageUri('');
+    setErrors({});
+  };
+
+  const handleClose = () => {
+    resetForm();
     onClose();
   };
 
@@ -330,7 +395,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
         <TouchableOpacity 
           style={styles.backdrop}
           activeOpacity={1}
-          onPress={onClose}>
+          onPress={handleClose}>
           <TouchableOpacity 
             style={styles.modalWrapper}
             activeOpacity={1}
@@ -344,7 +409,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 <Text style={styles.title}>Add Your Pet</Text>
                 <TouchableOpacity 
                   style={styles.closeButton}
-                  onPress={onClose}
+                  onPress={handleClose}
                   activeOpacity={0.7}>
                   <Icon name="close" size={24} color={Colors.textSecondary} />
                 </TouchableOpacity>
@@ -381,74 +446,120 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Pet Name</Text>
-                  <View style={styles.inputContainer}>
-                    <Icon name="paw" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+                  <View style={[styles.inputContainer, errors.name && styles.inputContainerError]}>
+                    <Icon name="paw" size={20} color={errors.name ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Enter pet name"
                       value={name}
-                      onChangeText={setName}
+                      onChangeText={(text) => {
+                        setName(text);
+                        if (text.trim()) {
+                          setErrors(prev => ({...prev, name: validateName(text)}));
+                        } else {
+                          setErrors(prev => ({...prev, name: undefined}));
+                        }
+                      }}
+                      onBlur={() => setErrors(prev => ({...prev, name: validateName(name)}))}
                       placeholderTextColor={Colors.textLight}
                     />
                   </View>
+                  {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Type</Text>
-                  <View style={styles.inputContainer}>
-                    <Icon name="apps" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+                  <View style={[styles.inputContainer, errors.type && styles.inputContainerError]}>
+                    <Icon name="apps" size={20} color={errors.type ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Dog, Cat, Bird, etc."
                       value={type}
-                      onChangeText={setType}
+                      onChangeText={(text) => {
+                        setType(text);
+                        if (text.trim()) {
+                          setErrors(prev => ({...prev, type: validateType(text)}));
+                        } else {
+                          setErrors(prev => ({...prev, type: undefined}));
+                        }
+                      }}
+                      onBlur={() => setErrors(prev => ({...prev, type: validateType(type)}))}
                       placeholderTextColor={Colors.textLight}
                     />
                   </View>
+                  {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
                 </View>
 
                 <View style={styles.inputRow}>
                   <View style={[styles.inputGroup, styles.inputGroupHalf]}>
                     <Text style={styles.label}>Age</Text>
-                    <View style={styles.inputContainer}>
-                      <Icon name="calendar" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+                    <View style={[styles.inputContainer, errors.age && styles.inputContainerError]}>
+                      <Icon name="calendar" size={20} color={errors.age ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                       <TextInput
                         style={styles.input}
                         placeholder="Years"
                         value={age}
-                        onChangeText={setAge}
+                        onChangeText={(text) => {
+                          // Only allow numbers
+                          const numericText = text.replace(/[^0-9]/g, '');
+                          setAge(numericText);
+                          if (numericText.trim()) {
+                            setErrors(prev => ({...prev, age: validateAge(numericText)}));
+                          } else {
+                            setErrors(prev => ({...prev, age: undefined}));
+                          }
+                        }}
+                        onBlur={() => setErrors(prev => ({...prev, age: validateAge(age)}))}
                         keyboardType="numeric"
                         placeholderTextColor={Colors.textLight}
                       />
                     </View>
+                    {errors.age && <Text style={styles.errorText}>{errors.age}</Text>}
                   </View>
 
                   <View style={[styles.inputGroup, styles.inputGroupHalf]}>
                     <Text style={styles.label}>Breed</Text>
-                    <View style={styles.inputContainer}>
-                      <Icon name="star" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+                    <View style={[styles.inputContainer, errors.breed && styles.inputContainerError]}>
+                      <Icon name="star" size={20} color={errors.breed ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                       <TextInput
                         style={styles.input}
                         placeholder="Breed"
                         value={breed}
-                        onChangeText={setBreed}
+                        onChangeText={(text) => {
+                          setBreed(text);
+                          if (text.trim()) {
+                            setErrors(prev => ({...prev, breed: validateBreed(text)}));
+                          } else {
+                            setErrors(prev => ({...prev, breed: undefined}));
+                          }
+                        }}
+                        onBlur={() => setErrors(prev => ({...prev, breed: validateBreed(breed)}))}
                         placeholderTextColor={Colors.textLight}
                       />
                     </View>
+                    {errors.breed && <Text style={styles.errorText}>{errors.breed}</Text>}
                   </View>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Bio (Optional)</Text>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Bio (Optional)</Text>
+                    <Text style={styles.characterCount}>{bio.length}/500</Text>
+                  </View>
                   <View style={[styles.inputContainer, styles.bioContainer]}>
                     <TextInput
                       style={[styles.input, styles.bioInput]}
                       placeholder="Tell us about your pet..."
                       value={bio}
-                      onChangeText={setBio}
+                      onChangeText={(text) => {
+                        if (text.length <= 500) {
+                          setBio(text);
+                        }
+                      }}
                       multiline
                       numberOfLines={4}
                       placeholderTextColor={Colors.textLight}
+                      maxLength={500}
                     />
                   </View>
                 </View>
@@ -457,7 +568,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
               <View style={styles.buttonContainer}>
                 <TouchableOpacity 
                   style={styles.cancelButton}
-                  onPress={onClose}
+                  onPress={handleClose}
                   activeOpacity={0.7}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
@@ -642,6 +753,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     letterSpacing: 0.2,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  characterCount: {
+    fontSize: 12,
+    color: Colors.textLight,
+    fontWeight: '500',
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -650,6 +772,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.gray200,
     ...Shadows.small,
+  },
+  inputContainerError: {
+    borderColor: Colors.error,
+  },
+  errorText: {
+    fontSize: 12,
+    color: Colors.error,
+    marginTop: 4,
+    marginLeft: 4,
   },
   inputIcon: {
     marginLeft: 16,

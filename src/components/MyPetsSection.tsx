@@ -23,6 +23,7 @@ const MyPetsSection: React.FC<MyPetsSectionProps> = ({
   const [userAnimals, setUserAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
   const optimisticAnimalsRef = useRef<Set<string>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Fetch user's animals from Firebase
   useEffect(() => {
@@ -140,10 +141,17 @@ const MyPetsSection: React.FC<MyPetsSectionProps> = ({
         <View style={styles.animalsGrid}>
           {userAnimals.map(animal => (
             <View key={animal.id} style={styles.animalCard}>
-              <Image
-                source={{uri: animal.image}}
-                style={styles.animalImage}
-              />
+              {imageErrors.has(animal.id) ? (
+                <View style={[styles.animalImage, styles.animalImageError]}>
+                  <Icon name="image-outline" size={30} color={Colors.gray400} />
+                </View>
+              ) : (
+                <Image
+                  source={{uri: animal.image}}
+                  style={styles.animalImage}
+                  onError={() => setImageErrors(prev => new Set(prev).add(animal.id))}
+                />
+              )}
               <View style={styles.animalInfo}>
                 <Text style={styles.animalName}>{animal.name}</Text>
                 <Text style={styles.animalBreed}>{animal.breed}</Text>
@@ -229,6 +237,11 @@ const styles = StyleSheet.create({
     marginRight: 16,
     borderWidth: 2,
     borderColor: Colors.gray200,
+  },
+  animalImageError: {
+    backgroundColor: Colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   animalInfo: {
     flex: 1,

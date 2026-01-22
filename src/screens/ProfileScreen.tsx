@@ -42,6 +42,28 @@ const ProfileScreen = () => {
     await contextAddAnimal(animal);
   };
 
+  // Wrapped removeAnimal function with confirmation dialog
+  const handleRemoveAnimal = (animalId: string) => {
+    const animal = userAnimals.find(a => a.id === animalId);
+    const animalName = animal?.name || 'this pet';
+    
+    Alert.alert(
+      'Delete Pet',
+      `Are you sure you want to delete ${animalName}? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => removeAnimal(animalId),
+        },
+      ],
+    );
+  };
+
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
@@ -276,7 +298,7 @@ const ProfileScreen = () => {
 
         <MyPetsSection
           onAddPet={() => setModalVisible(true)}
-          onRemovePet={removeAnimal}
+          onRemovePet={handleRemoveAnimal}
           onAnimalAdded={(callback) => {
             optimisticAddRef.current = callback;
           }}

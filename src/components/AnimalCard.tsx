@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {View, Text, Image, StyleSheet, Dimensions, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {Animal} from '../types';
@@ -24,10 +24,23 @@ const AnimalCard: React.FC<AnimalCardProps> = ({
   onChat,
   showActions = true,
 }) => {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <View style={styles.card}>
       <View style={styles.imageContainer}>
-        <Image source={{uri: animal.image}} style={styles.image} />
+        {imageError ? (
+          <View style={styles.imageErrorContainer}>
+            <Icon name="image-outline" size={60} color={Colors.gray400} />
+            <Text style={styles.imageErrorText}>Image not available</Text>
+          </View>
+        ) : (
+          <Image 
+            source={{uri: animal.image}} 
+            style={styles.image}
+            onError={() => setImageError(true)}
+          />
+        )}
         <View style={styles.gradientOverlay} />
         
         {/* Info Badge on Image */}
@@ -98,6 +111,19 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  imageErrorContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.gray100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageErrorText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: Colors.gray400,
+    fontWeight: '500',
   },
   gradientOverlay: {
     position: 'absolute',

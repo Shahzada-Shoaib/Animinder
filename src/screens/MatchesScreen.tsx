@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback} from 'react';
+import React, {useEffect, useCallback, useState} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -21,13 +22,20 @@ import {Match} from '../types';
 const MatchesScreen = () => {
   const {matches, currentUser, refreshMatches} = useApp();
   const navigation = useNavigation();
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
 
   // Refresh matches when screen is focused
   useFocusEffect(
     useCallback(() => {
       console.log('[MatchesScreen] Screen focused, refreshing matches');
       if (currentUser.id && currentUser.id !== 'user1') {
+        setIsLoading(true);
         refreshMatches();
+        // Simulate loading time for better UX
+        setTimeout(() => setIsLoading(false), 500);
+      } else {
+        setIsLoading(false);
       }
     }, [currentUser.id, refreshMatches]),
   );
@@ -36,12 +44,15 @@ const MatchesScreen = () => {
     console.log('[MatchesScreen] Matches updated:', matches.length);
   }, [matches]);
 
+  const [navigatingChatId, setNavigatingChatId] = useState<string | null>(null);
+
   const handleMatchPress = async (match: Match) => {
-    if (currentUser.id === 'user1') {
+    if (currentUser.id === 'user1' || navigatingChatId) {
       return;
     }
 
     try {
+      setNavigatingChatId(match.id);
       const otherUserId =
         match.userId1 === currentUser.id ? match.userId2 : match.userId1;
 
@@ -56,6 +67,8 @@ const MatchesScreen = () => {
       });
     } catch (error) {
       console.error('Error opening chat:', error);
+    } finally {
+      setNavigatingChatId(null);
     }
   };
 
@@ -67,7 +80,12 @@ const MatchesScreen = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
-        {matches.length === 0 ? (
+        {isLoading ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Loading matches...</Text>
+          </View>
+        ) : matches.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No matches yet</Text>
             <Text style={styles.emptySubtext}>
@@ -82,22 +100,33 @@ const MatchesScreen = () => {
                 style={styles.matchCard}
                 activeOpacity={0.7}
                 onPress={() => handleMatchPress(match)}
-                disabled={currentUser.id === 'user1'}>
+                disabled={currentUser.id === 'user1' || navigatingChatId === match.id}>
                 <View style={styles.matchHeader}>
                   <Text style={styles.matchTitle}>It's a Match!</Text>
-                  <Text style={styles.matchDate}>
-                    {match.timestamp
-                      ? new Date(match.timestamp).toLocaleDateString()
-                      : 'Today'}
-                  </Text>
+                  {navigatingChatId === match.id ? (
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                  ) : (
+                    <Text style={styles.matchDate}>
+                      {match.timestamp
+                        ? new Date(match.timestamp).toLocaleDateString()
+                        : 'Today'}
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.animalsContainer}>
                   <View style={styles.animalContainer}>
-                    <Image
-                      source={{uri: match.animal1?.image || ''}}
-                      style={styles.animalImage}
-                    />
+                    {imageErrors.has(`animal1-${match.id}`) ? (
+                      <View style={styles.animalImageError}>
+                        <Icon name="image-outline" size={40} color={Colors.gray400} />
+                      </View>
+                    ) : (
+                      <Image
+                        source={{uri: match.animal1?.image || ''}}
+                        style={styles.animalImage}
+                        onError={() => setImageErrors(prev => new Set(prev).add(`animal1-${match.id}`))}
+                      />
+                    )}
                     <Text style={styles.animalName}>
                       {match.animal1?.name || 'Unknown'}
                     </Text>
@@ -106,10 +135,17 @@ const MatchesScreen = () => {
                   <Icon name="heart" size={30} color={Colors.primary} />
 
                   <View style={styles.animalContainer}>
-                    <Image
-                      source={{uri: match.animal2?.image || ''}}
-                      style={styles.animalImage}
-                    />
+                    {imageErrors.has(`animal2-${match.id}`) ? (
+                      <View style={styles.animalImageError}>
+                        <Icon name="image-outline" size={40} color={Colors.gray400} />
+                      </View>
+                    ) : (
+                      <Image
+                        source={{uri: match.animal2?.image || ''}}
+                        style={styles.animalImage}
+                        onError={() => setImageErrors(prev => new Set(prev).add(`animal2-${match.id}`))}
+                      />
+                    )}
                     <Text style={styles.animalName}>
                       {match.animal2?.name || 'Unknown'}
                     </Text>
@@ -148,6 +184,17 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  loadingState: {
+    alignItems: 'center',
+    padding: 40,
+    marginTop: 100,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
@@ -207,6 +254,15 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginBottom: 10,
+  },
+  animalImageError: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+    backgroundColor: Colors.gray200,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   animalName: {
     fontSize: 16,

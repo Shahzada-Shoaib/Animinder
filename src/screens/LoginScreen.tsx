@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import auth from '@react-native-firebase/auth';
@@ -18,7 +19,13 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onSkip }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   const signInWithGoogle = async (): Promise<void> => {
+    if (isLoading) return; // Prevent multiple clicks
+    
+    try {
+      setIsLoading(true);
     try {
       // 1. Check Google Play Services
       await GoogleSignin.hasPlayServices();
@@ -57,6 +64,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onSkip }) => {
       } else {
         Alert.alert('Error', error.message || 'Failed to sign in with Google');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,12 +91,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onSkip }) => {
         <View style={styles.buttonContainer}>
           {/* Google Login Button */}
           <TouchableOpacity
-            style={[styles.googleButton, Shadows.medium]}
+            style={[styles.googleButton, Shadows.medium, isLoading && styles.googleButtonDisabled]}
             onPress={signInWithGoogle}
-            activeOpacity={0.8}>
+            activeOpacity={0.8}
+            disabled={isLoading}>
             <View style={styles.googleButtonContent}>
-              <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color={Colors.primary} style={styles.loadingIndicator} />
+              ) : (
+                <Text style={styles.googleIcon}>G</Text>
+              )}
+              <Text style={styles.googleButtonText}>
+                {isLoading ? 'Signing in...' : 'Continue with Google'}
+              </Text>
             </View>
           </TouchableOpacity>
 
@@ -154,6 +170,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.gray200,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
+  },
+  loadingIndicator: {
+    marginRight: 0,
   },
   googleButtonContent: {
     flexDirection: 'row',
