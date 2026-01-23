@@ -3,6 +3,7 @@ import {User, Animal} from '../types';
 
 const usersCollection = firestore().collection('users');
 const animalsCollection = firestore().collection('animals');
+const viewedMatchesCollection = firestore().collection('viewedMatches');
 
 /**
  * Save or update user data in Firestore
@@ -212,6 +213,47 @@ export const deleteAnimal = async (animalId: string): Promise<void> => {
   } catch (error) {
     console.error('Error deleting animal from Firestore:', error);
     throw error;
+  }
+};
+
+/**
+ * Get all viewed match IDs for a user
+ */
+export const getViewedMatchIds = async (userId: string): Promise<Set<string>> => {
+  try {
+    const snapshot = await viewedMatchesCollection
+      .where('userId', '==', userId)
+      .get();
+    
+    const viewedIds = new Set<string>();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data?.matchId) {
+        viewedIds.add(data.matchId);
+      }
+    });
+    
+    return viewedIds;
+  } catch (error) {
+    console.error('Error getting viewed matches:', error);
+    return new Set<string>();
+  }
+};
+
+/**
+ * Mark a match as viewed
+ */
+export const markMatchAsViewed = async (userId: string, matchId: string): Promise<void> => {
+  try {
+    const docId = `${userId}_${matchId}`;
+    await viewedMatchesCollection.doc(docId).set({
+      userId,
+      matchId,
+      viewedAt: firestore.FieldValue.serverTimestamp(),
+    });
+    console.log('Match marked as viewed:', matchId);
+  } catch (error) {
+    console.error('Error marking match as viewed:', error);
   }
 };
 

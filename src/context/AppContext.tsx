@@ -1,7 +1,7 @@
 import React, {createContext, useState, useContext, ReactNode, useEffect, useRef} from 'react';
 import {Animal, User, Match, Chat} from '../types';
 import auth from '@react-native-firebase/auth';
-import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals, getAnimal} from '../services/firestoreService';
+import {saveUser, getUser, saveAnimal, getUserAnimals, deleteAnimal, getAllAnimals, getAnimal, getViewedMatchIds, markMatchAsViewed} from '../services/firestoreService';
 import {saveLike, getUserLikes, checkMutualLike} from '../services/likeService';
 import {saveMatch, getUserMatches, getUserMatchesRealtime} from '../services/matchService';
 import {getUserChats, createOrGetChat, setupMessageNotifications} from '../services/chatService';
@@ -64,7 +64,7 @@ interface AppContextType {
   removeAnimal: (animalId: string) => void;
   likeAnimal: (animalId: string) => void;
   passAnimal: (animalId: string) => void;
-  clearNewMatch: () => void;
+  clearNewMatch: () => Promise<void>;
   createChat: (otherUserId: string) => Promise<Chat | null>;
   setNavigationRef: (ref: NavigationContainerRef<any> | null) => void;
   setCurrentViewingChatId: (chatId: string | undefined) => void;
@@ -342,14 +342,27 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     if (userId && userId !== 'user1') {
       // Track previous matches to detect new ones
       let previousMatchIds = new Set<string>();
+      let isInitialLoad = true;
+      let viewedMatchIds = new Set<string>();
       
-      const unsubscribe = getUserMatchesRealtime(userId, (userMatches) => {
+      const unsubscribe = getUserMatchesRealtime(userId, async (userMatches) => {
         console.log('[AppContext] getUserMatchesRealtime callback received', userMatches.length, 'matches');
+        
+        // Load viewed matches only on initial load
+        if (isInitialLoad) {
+          viewedMatchIds = await getViewedMatchIds(userId);
+          previousMatchIds = new Set(userMatches.map(m => m.id));
+          isInitialLoad = false;
+          console.log('[AppContext] Loaded', viewedMatchIds.size, 'viewed matches from Firestore');
+        }
+        
         // Check for new matches
         const currentMatchIds = new Set(userMatches.map(m => m.id));
         
-        // Find new matches (matches that weren't in previous set)
-        const newMatches = userMatches.filter(m => !previousMatchIds.has(m.id));
+        // Find truly new matches (not in previous set AND not viewed)
+        const newMatches = userMatches.filter(m => 
+          !previousMatchIds.has(m.id) && !viewedMatchIds.has(m.id)
+        );
         
         // Update previous set
         previousMatchIds = currentMatchIds;
@@ -564,8 +577,16 @@ export const AppProvider = ({children}: {children: ReactNode}) => {
     }
   };
 
-  // Clear new match (after modal is shown)
-  const clearNewMatch = () => {
+  // Clear new match (after modal is shown) - also mark as viewed in Firestore
+  const clearNewMatch = async () => {
+    if (newMatch && currentUser.id && currentUser.id !== 'user1') {
+      try {
+        await markMatchAsViewed(currentUser.id, newMatch.id);
+        console.log('[AppContext] Match marked as viewed:', newMatch.id);
+      } catch (error) {
+        console.error('[AppContext] Error marking match as viewed:', error);
+      }
+    }
     setNewMatch(null);
   };
 

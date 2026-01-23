@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {useApp} from '../context/AppContext';
-import {getUserMatches} from '../services/matchService';
 import {createOrGetChat} from '../services/chatService';
 import {getUser} from '../services/firestoreService';
 import auth from '@react-native-firebase/auth';
@@ -20,29 +19,25 @@ import {Colors} from '../utils/colors';
 import {Match} from '../types';
 
 const MatchesScreen = () => {
-  const {matches, currentUser, refreshMatches} = useApp();
+  const {matches, currentUser} = useApp();
   const navigation = useNavigation();
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const hasInitializedRef = useRef(false);
 
-  // Refresh matches when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      console.log('[MatchesScreen] Screen focused, refreshing matches');
-      if (currentUser.id && currentUser.id !== 'user1') {
-        setIsLoading(true);
-        refreshMatches();
-        // Simulate loading time for better UX
-        setTimeout(() => setIsLoading(false), 500);
-      } else {
-        setIsLoading(false);
-      }
-    }, [currentUser.id, refreshMatches]),
-  );
-
+  // Set loading to false once matches are loaded (real-time listener handles updates)
   useEffect(() => {
-    console.log('[MatchesScreen] Matches updated:', matches.length);
-  }, [matches]);
+    // Only set loading to false once on initial load
+    if (!hasInitializedRef.current) {
+      // Small delay to ensure real-time listener has time to fetch data
+      const timer = setTimeout(() => {
+        hasInitializedRef.current = true;
+        setIsLoading(false);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const [navigatingChatId, setNavigatingChatId] = useState<string | null>(null);
 
