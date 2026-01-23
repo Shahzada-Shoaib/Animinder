@@ -24,8 +24,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onSkip }) => {
   const signInWithGoogle = async (): Promise<void> => {
     if (isLoading) return; // Prevent multiple clicks
     
-    try {
-      setIsLoading(true);
+    setIsLoading(true);
     try {
       // 1. Check Google Play Services
       await GoogleSignin.hasPlayServices();
