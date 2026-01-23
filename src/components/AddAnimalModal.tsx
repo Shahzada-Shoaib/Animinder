@@ -400,18 +400,22 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
             style={styles.modalWrapper}
             activeOpacity={1}
             onPress={e => e.stopPropagation()}>
-            <View style={styles.modalContent}>
+            <ScrollView 
+              style={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={styles.scrollContent}>
               {/* Header */}
               <View style={styles.header}>
                 <View style={styles.headerIconContainer}>
-                  <Icon name="paw" size={28} color={Colors.primary} />
+                  <Icon name="paw" size={24} color={Colors.primary} />
                 </View>
                 <Text style={styles.title}>Add Your Pet</Text>
                 <TouchableOpacity 
                   style={styles.closeButton}
                   onPress={handleClose}
                   activeOpacity={0.7}>
-                  <Icon name="close" size={24} color={Colors.textSecondary} />
+                  <Icon name="close" size={20} color={Colors.textSecondary} />
                 </TouchableOpacity>
               </View>
               
@@ -425,14 +429,14 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                     <Image source={{uri: imageUri}} style={styles.previewImage} />
                     <View style={styles.imageOverlay}>
                       <View style={styles.editImageButton}>
-                        <Icon name="camera" size={24} color={Colors.white} />
+                        <Icon name="camera" size={20} color={Colors.white} />
                       </View>
                     </View>
                   </View>
                 ) : (
                   <View style={styles.imagePlaceholder}>
                     <View style={styles.imageIconContainer}>
-                      <Icon name="camera" size={40} color={Colors.primary} />
+                      <Icon name="camera" size={32} color={Colors.primary} />
                     </View>
                     <Text style={styles.imageText}>Tap to add photo</Text>
                     <Text style={styles.imageSubtext}>Camera or Gallery</Text>
@@ -440,14 +444,11 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 )}
               </TouchableOpacity>
               
-              <ScrollView 
-                style={styles.form}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}>
+              <View style={styles.form}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Pet Name</Text>
                   <View style={[styles.inputContainer, errors.name && styles.inputContainerError]}>
-                    <Icon name="paw" size={20} color={errors.name ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
+                    <Icon name="paw" size={18} color={errors.name ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Enter pet name"
@@ -470,7 +471,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Type</Text>
                   <View style={[styles.inputContainer, errors.type && styles.inputContainerError]}>
-                    <Icon name="apps" size={20} color={errors.type ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
+                    <Icon name="apps" size={18} color={errors.type ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Dog, Cat, Bird, etc."
@@ -494,7 +495,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                   <View style={[styles.inputGroup, styles.inputGroupHalf]}>
                     <Text style={styles.label}>Age</Text>
                     <View style={[styles.inputContainer, errors.age && styles.inputContainerError]}>
-                      <Icon name="calendar" size={20} color={errors.age ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
+                      <Icon name="calendar" size={18} color={errors.age ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                       <TextInput
                         style={styles.input}
                         placeholder="Years"
@@ -520,7 +521,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                   <View style={[styles.inputGroup, styles.inputGroupHalf]}>
                     <Text style={styles.label}>Breed</Text>
                     <View style={[styles.inputContainer, errors.breed && styles.inputContainerError]}>
-                      <Icon name="star" size={20} color={errors.breed ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
+                      <Icon name="star" size={18} color={errors.breed ? Colors.error : Colors.textSecondary} style={styles.inputIcon} />
                       <TextInput
                         style={styles.input}
                         placeholder="Breed"
@@ -563,7 +564,7 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                     />
                   </View>
                 </View>
-              </ScrollView>
+              </View>
 
               <View style={styles.buttonContainer}>
                 <TouchableOpacity 
@@ -584,13 +585,13 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
                     </>
                   ) : (
                     <>
-                      <Icon name="checkmark" size={20} color={Colors.white} style={styles.addButtonIcon} />
+                      <Icon name="checkmark" size={18} color={Colors.white} style={styles.addButtonIcon} />
                       <Text style={styles.addButtonText}>Add Pet</Text>
                     </>
                   )}
                 </TouchableOpacity>
               </View>
-            </View>
+            </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
       </KeyboardAvoidingView>
@@ -601,43 +602,46 @@ const AddAnimalModal: React.FC<AddAnimalModalProps> = ({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   backdrop: {
     flex: 1,
     width: '100%',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingTop: 0,
   },
   modalWrapper: {
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 0,
   },
   modalContent: {
     backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 24,
-    width: '94%',
-    maxWidth: 500,
-    maxHeight: '92%',
+    borderRadius: 20,
+    width: '100%',
+    maxHeight: '100%',
     ...Shadows.large,
+  },
+  scrollContent: {
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 22,
-    paddingBottom: 18,
+    marginBottom: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1.5,
     borderBottomColor: Colors.gray200,
   },
   headerIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
@@ -645,7 +649,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary + '25',
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.text,
     flex: 1,
@@ -653,18 +657,18 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.gray100,
   },
   imagePicker: {
     width: '100%',
-    height: 150,
-    borderRadius: 16,
-    marginBottom: 22,
+    height: 120,
+    borderRadius: 12,
+    marginBottom: 14,
     overflow: 'hidden',
     backgroundColor: Colors.gray100,
     ...Shadows.small,
@@ -690,9 +694,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   editImageButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -706,61 +710,60 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.gray300,
     borderStyle: 'dashed',
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: Colors.gray100,
   },
   imageIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: Colors.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1.5,
     borderColor: Colors.primary + '20',
   },
   imageText: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.text,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 2,
     letterSpacing: 0.2,
   },
   imageSubtext: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
     fontWeight: '500',
   },
   form: {
-    marginBottom: 20,
-    maxHeight: 380,
+    marginBottom: 12,
   },
   inputGroup: {
-    marginBottom: 18,
+    marginBottom: 12,
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 10,
   },
   inputGroupHalf: {
     flex: 1,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 8,
+    marginBottom: 6,
     letterSpacing: 0.2,
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   characterCount: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textLight,
     fontWeight: '500',
   },
@@ -768,7 +771,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: Colors.gray200,
     ...Shadows.small,
@@ -777,46 +780,46 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.error,
-    marginTop: 4,
+    marginTop: 3,
     marginLeft: 4,
   },
   inputIcon: {
-    marginLeft: 16,
-    marginRight: 8,
+    marginLeft: 12,
+    marginRight: 6,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
-    paddingRight: 16,
-    fontSize: 15,
+    paddingVertical: 10,
+    paddingRight: 12,
+    fontSize: 14,
     color: Colors.text,
     fontWeight: '500',
   },
   bioContainer: {
     alignItems: 'flex-start',
-    minHeight: 100,
+    minHeight: 80,
   },
   bioInput: {
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingTop: 10,
+    paddingBottom: 10,
     textAlignVertical: 'top',
-    minHeight: 100,
-    lineHeight: 20,
+    minHeight: 80,
+    lineHeight: 18,
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-    paddingTop: 18,
+    gap: 10,
+    marginTop: 6,
+    paddingTop: 12,
     borderTopWidth: 1.5,
     borderTopColor: Colors.gray200,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
     backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -824,15 +827,15 @@ const styles = StyleSheet.create({
     borderColor: Colors.gray300,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: Colors.textSecondary,
     letterSpacing: 0.2,
   },
   addButton: {
     flex: 1.2,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -840,10 +843,10 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   addButtonIcon: {
-    marginRight: 6,
+    marginRight: 5,
   },
   addButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: Colors.white,
     letterSpacing: 0.3,
