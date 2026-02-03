@@ -627,14 +627,14 @@ const styles = StyleSheet.create({
     ...Shadows.large,
   },
   scrollContent: {
-    padding: 16,
+    padding: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1.5,
     borderBottomColor: Colors.gray200,
   },
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary + '25',
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: Colors.text,
     flex: 1,
@@ -666,9 +666,9 @@ const styles = StyleSheet.create({
   },
   imagePicker: {
     width: '100%',
-    height: 120,
+    height: 100,
     borderRadius: 12,
-    marginBottom: 14,
+    marginBottom: 12,
     overflow: 'hidden',
     backgroundColor: Colors.gray100,
     ...Shadows.small,
@@ -737,10 +737,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   form: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   inputGroup: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   inputRow: {
     flexDirection: 'row',
@@ -750,10 +750,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 6,
+    marginBottom: 5,
     letterSpacing: 0.2,
   },
   labelRow: {
@@ -791,9 +791,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingRight: 12,
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.text,
     fontWeight: '500',
   },
@@ -811,14 +811,14 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 6,
+    marginTop: 4,
     paddingTop: 12,
     borderTopWidth: 1.5,
     borderTopColor: Colors.gray200,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 11,
+    paddingVertical: 9,
     borderRadius: 10,
     backgroundColor: Colors.white,
     justifyContent: 'center',
@@ -827,14 +827,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.gray300,
   },
   cancelButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: Colors.textSecondary,
     letterSpacing: 0.2,
   },
   addButton: {
     flex: 1.2,
-    paddingVertical: 11,
+    paddingVertical: 9,
     borderRadius: 10,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   addButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: Colors.white,
     letterSpacing: 0.3,

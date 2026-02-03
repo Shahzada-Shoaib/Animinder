@@ -76,7 +76,7 @@ const ChatsScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.titleContainer}>
         <Text style={styles.title}>Chats</Text>
-        <Icon name="chatbubble" size={28} color={Colors.primary} style={styles.titleIcon} />
+        <Icon name="chatbubble" size={22} color={Colors.primary} style={styles.titleIcon} />
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -87,7 +87,7 @@ const ChatsScreen = () => {
           </View>
         ) : chats.length === 0 ? (
           <View style={styles.emptyState}>
-            <Icon name="chatbubble" size={80} color={Colors.primary} style={styles.emptyIcon} />
+            <Icon name="chatbubble" size={60} color={Colors.primary} style={styles.emptyIcon} />
             <Text style={styles.emptyText}>No chats yet</Text>
             <Text style={styles.emptySubtext}>
               Start a conversation with someone!
@@ -161,11 +161,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: Colors.primary,
     marginRight: 8,
@@ -175,12 +175,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
   },
   loadingState: {
     alignItems: 'center',
-    padding: 40,
-    marginTop: 100,
+    padding: 24,
+    marginTop: 60,
   },
   loadingText: {
     marginTop: 16,
@@ -190,31 +190,31 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
-    marginTop: 100,
+    padding: 24,
+    marginTop: 60,
   },
   emptyIcon: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   emptyText: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#666',
     marginBottom: 10,
   },
   emptySubtext: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#999',
     textAlign: 'center',
   },
   chatsList: {
-    gap: 10,
+    gap: 8,
     paddingBottom: 20,
   },
   chatCard: {
     backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
+    borderRadius: 12,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
@@ -227,10 +227,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   chatImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
   },
   defaultAvatar: {
     backgroundColor: Colors.gray400,
@@ -241,34 +241,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
   },
   chatMessage: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
   },
   chatMeta: {
     alignItems: 'flex-end',
   },
   chatTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#999',
     marginBottom: 5,
   },
   badge: {
     backgroundColor: Colors.primary,
     borderRadius: 10,
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
   },
 });

@@ -117,7 +117,7 @@ const MatchModal: React.FC<MatchModalProps> = ({
           
           <View style={styles.titleContainer}>
             <Text style={styles.title}>It's a Match!</Text>
-            <Icon name="trophy" size={32} color={Colors.primary} style={styles.titleIcon} />
+            <Icon name="trophy" size={26} color={Colors.primary} style={styles.titleIcon} />
           </View>
           <Text style={styles.subtitle}>You both liked each other</Text>
 
@@ -130,7 +130,7 @@ const MatchModal: React.FC<MatchModalProps> = ({
               <Text style={styles.animalName}>{match.animal1.name}</Text>
             </View>
 
-            <Icon name="heart" size={40} color={Colors.primary} />
+            <Icon name="heart" size={32} color={Colors.primary} />
 
             <View style={styles.animalCard}>
               <Image
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: Colors.white,
     borderRadius: 24,
-    padding: 24,
+    padding: 20,
     width: '85%',
     alignItems: 'center',
   },
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: 'bold',
     color: Colors.primary,
     marginRight: 8,
@@ -185,41 +185,41 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   animalsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    gap: 16,
+    marginBottom: 16,
+    gap: 12,
   },
   animalCard: {
     alignItems: 'center',
   },
   animalImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 8,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 6,
   },
   animalName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
   },
   closeButton: {
     backgroundColor: Colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     borderRadius: 20,
     minWidth: 120,
   },
   closeButtonText: {
     color: Colors.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
   },

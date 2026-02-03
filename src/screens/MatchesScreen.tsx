@@ -71,7 +71,7 @@ const MatchesScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.titleContainer}>
         <Text style={styles.title}>Matches</Text>
-        <Icon name="heart" size={28} color={Colors.primary} style={styles.titleIcon} />
+        <Icon name="heart" size={22} color={Colors.primary} style={styles.titleIcon} />
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -127,7 +127,7 @@ const MatchesScreen = () => {
                     </Text>
                   </View>
 
-                  <Icon name="heart" size={30} color={Colors.primary} />
+                  <Icon name="heart" size={24} color={Colors.primary} />
 
                   <View style={styles.animalContainer}>
                     {imageErrors.has(`animal2-${match.id}`) ? (
@@ -164,11 +164,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: Colors.primary,
     marginRight: 8,
@@ -178,12 +178,12 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   loadingState: {
     alignItems: 'center',
-    padding: 40,
-    marginTop: 100,
+    padding: 24,
+    marginTop: 60,
   },
   loadingText: {
     marginTop: 16,
@@ -193,28 +193,28 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
-    marginTop: 100,
+    padding: 24,
+    marginTop: 60,
   },
   emptyText: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#666',
     marginBottom: 10,
   },
   emptySubtext: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#999',
     textAlign: 'center',
   },
   matchesList: {
-    gap: 15,
+    gap: 12,
     paddingBottom: 20,
   },
   matchCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
@@ -225,15 +225,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   matchTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: Colors.primary,
   },
   matchDate: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
   },
   animalsContainer: {
@@ -245,22 +245,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   animalImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 8,
   },
   animalImageError: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 8,
     backgroundColor: Colors.gray200,
     justifyContent: 'center',
     alignItems: 'center',
   },
   animalName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
   },

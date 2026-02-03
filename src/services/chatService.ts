@@ -444,7 +444,7 @@ export const setupMessageNotifications = (
 
   // Listen to messages without orderBy to avoid index requirement
   // We'll sort in memory if needed
-  const unsubscribe = messagesCollection
+  const unsubscribe = firestore().collectionGroup('messages')
     .where('receiverId', '==', userId)
     .limit(100) // Listen to recent messages (increased limit)
     .onSnapshot(

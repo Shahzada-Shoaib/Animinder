@@ -81,7 +81,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onSkip }) => {
       <View style={styles.content}>
         {/* Logo/Icon Area */}
         <View style={styles.logoContainer}>
-          <Icon name="paw" size={80} color={Colors.primary} style={styles.logoIcon} />
+          <Icon name="paw" size={64} color={Colors.primary} style={styles.logoIcon} />
           <Text style={styles.appName}>Pet Mates</Text>
           <Text style={styles.tagline}>Find your pet's perfect match</Text>
         </View>
@@ -131,39 +131,39 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     justifyContent: 'space-between',
-    paddingTop: 60,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 30,
   },
   logoIcon: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   appName: {
-    fontSize: 42,
+    fontSize: 36,
     fontWeight: 'bold',
     color: Colors.primary,
     marginBottom: 8,
     letterSpacing: 1,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
   buttonContainer: {
     width: '100%',
-    gap: 16,
+    gap: 12,
   },
   googleButton: {
     backgroundColor: Colors.white,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -193,23 +193,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   googleButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
   },
   skipButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: Colors.textSecondary,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textLight,
     textAlign: 'center',
     lineHeight: 18,

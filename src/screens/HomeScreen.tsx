@@ -88,7 +88,7 @@ const HomeScreen = () => {
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>Pet Mates</Text>
-          <Icon name="paw" size={24} color={Colors.primary} style={styles.logoIcon} />
+          <Icon name="paw" size={20} color={Colors.primary} style={styles.logoIcon} />
         </View>
        
       </View>
@@ -146,15 +146,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logoText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.primary,
     letterSpacing: -1,
@@ -189,28 +189,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyIcon: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   emptyText: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '700',
     color: Colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   emptySubtext: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
   instructions: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   swipeHint: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
     textAlign: 'center',
     fontWeight: '500',

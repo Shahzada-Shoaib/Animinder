@@ -67,7 +67,7 @@ const AnimalCard: React.FC<AnimalCardProps> = ({
               style={[styles.actionButton, styles.passButton]}
               onPress={onPass}
               activeOpacity={0.8}>
-              <Icon name="close" size={30} color={Colors.gray500} />
+              <Icon name="close" size={26} color={Colors.gray500} />
             </TouchableOpacity>
 
             {/* Chat Button */}
@@ -75,7 +75,7 @@ const AnimalCard: React.FC<AnimalCardProps> = ({
               style={[styles.actionButton, styles.chatButton]}
               onPress={onChat}
               activeOpacity={0.8}>
-              <Icon name="chatbubble" size={30} color={Colors.accent} />
+              <Icon name="chatbubble" size={26} color={Colors.accent} />
             </TouchableOpacity>
 
             {/* Like Button */}
@@ -83,7 +83,7 @@ const AnimalCard: React.FC<AnimalCardProps> = ({
               style={[styles.actionButton, styles.likeButton]}
               onPress={onLike}
               activeOpacity={0.8}>
-              <Icon name="heart" size={32} color={Colors.primary} />
+              <Icon name="heart" size={28} color={Colors.primary} />
             </TouchableOpacity>
           </View>
         )}
@@ -96,15 +96,15 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 24,
+    borderRadius: 20,
     backgroundColor: Colors.cardBg,
     ...Shadows.card,
   },
   imageContainer: {
     height: '65%',
     position: 'relative',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     overflow: 'hidden',
   },
   image: {
@@ -135,11 +135,11 @@ const styles = StyleSheet.create({
   },
   infoBadge: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 12,
+    right: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
     ...Shadows.small,
   },
@@ -151,9 +151,9 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    padding: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    padding: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     justifyContent: 'space-between',
   },
   mainInfo: {
@@ -163,10 +163,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   name: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: Colors.text,
     letterSpacing: -0.5,
@@ -174,18 +174,18 @@ const styles = StyleSheet.create({
   },
   ageTag: {
     backgroundColor: Colors.gray100,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
     marginLeft: 8,
   },
   ageText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
   bio: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 20,
     letterSpacing: 0.2,
@@ -198,9 +198,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   actionButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.medium,

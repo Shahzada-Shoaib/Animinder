@@ -207,7 +207,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           },
         ]}
         pointerEvents="none">
-        <Icon name="heart" size={100} color={Colors.primary} />
+        <Icon name="heart" size={80} color={Colors.primary} />
         <Text style={[styles.overlayText, styles.heartText]}>LIKE</Text>
       </Animated.View>
 
@@ -222,7 +222,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           },
         ]}
         pointerEvents="none">
-        <Icon name="close-circle" size={100} color={Colors.gray500} />
+        <Icon name="close-circle" size={80} color={Colors.gray500} />
         <Text style={[styles.overlayText, styles.crossText]}>PASS</Text>
       </Animated.View>
     </Animated.View>
@@ -251,8 +251,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(149, 165, 166, 0.1)',
   },
   overlayText: {
-    marginTop: 12,
-    fontSize: 24,
+    marginTop: 10,
+    fontSize: 20,
     fontWeight: '800',
     letterSpacing: 2,
   },
